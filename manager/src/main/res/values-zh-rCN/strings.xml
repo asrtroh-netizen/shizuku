@@ -57,6 +57,10 @@
     <string name="home_checks_adb_sub">电脑 ADB</string>
     <string name="home_wireless_adb_title_plain">无线调试启动</string>
     <string name="home_adb_title_plain">通过电脑启动（ADB）</string>
+    <string name="home_terminal_title_plain">终端</string>
+    <string name="home_adb_tile_title">电脑 ADB</string>
+    <string name="home_apps_tile_sub">已授权应用</string>
+    <string name="home_terminal_tile_sub">终端里用 Shizuku</string>
 
     <string name="home_app_management_waiting_service">请先启动 Shizuku——服务未运行时授权列表会是空的。</string>
     <string name="home_app_management_binder_unavailable">读不到授权应用（服务 binder 不可用）。请先启动/重启 Shizuku 再打开。</string>

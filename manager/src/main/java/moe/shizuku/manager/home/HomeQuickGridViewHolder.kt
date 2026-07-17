@@ -3,6 +3,7 @@ package moe.shizuku.manager.home
 import android.content.Intent
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -34,8 +35,8 @@ data class HomeQuickGridPayload(
 )
 
 /**
- * 2×2 quick entry: Apps / Terminal / Root / PC ADB.
- * Tap → short popup → original action.
+ * Always render four equal quick tiles (2×2): Apps / Terminal / Root / PC ADB.
+ * Non-root devices keep the Root tile visible but disabled — never collapse to three.
  */
 class HomeQuickGridViewHolder(
     private val binding: HomeActionsGridBinding,
@@ -48,12 +49,15 @@ class HomeQuickGridViewHolder(
             val inner = HomeActionsGridBinding.inflate(inflater, outer.root, true)
             HomeQuickGridViewHolder(inner, outer.root)
         }
+
+        private val HALF_MARGIN_PX_FALLBACK = 6
     }
 
     override fun onBind() {
         val context = itemView.context
         val running = data.status.isRunning
         val rooted = EnvironmentUtils.isRooted()
+        ensureEqualHalfTiles()
 
         val appsSub = when {
             !running || data.grantedCount == -1 -> context.getString(R.string.home_checks_apps_sub_waiting)
@@ -65,7 +69,12 @@ class HomeQuickGridViewHolder(
             )
         }
 
-        bindTile(binding.tileApps, R.drawable.ic_settings_outline_24dp, R.string.home_app_management_title, subtitleText = appsSub) {
+        bindTile(
+            binding.tileApps,
+            R.drawable.ic_settings_outline_24dp,
+            R.string.home_app_management_title,
+            subtitleText = appsSub,
+        ) {
             MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.home_app_management_title)
                 .setMessage(appsSub)
@@ -85,8 +94,8 @@ class HomeQuickGridViewHolder(
         bindTile(
             binding.tileTerminal,
             R.drawable.ic_terminal_24,
-            R.string.home_terminal_title,
-            R.string.home_terminal_description,
+            R.string.home_terminal_title_plain,
+            R.string.home_terminal_tile_sub,
             enabled = running && data.status.permission,
         ) {
             MaterialAlertDialogBuilder(context)
@@ -108,7 +117,7 @@ class HomeQuickGridViewHolder(
                 .show()
         }
 
-        // Always keep the 2×2 (four tiles). Non-root devices still show Root, but disabled.
+        // Never hide Root — non-root keeps a disabled fourth square.
         binding.tileRoot.root.isVisible = true
         val rootAction = if (data.rootRestart) R.string.home_root_button_restart else R.string.home_root_button_start
         bindTile(
@@ -141,7 +150,7 @@ class HomeQuickGridViewHolder(
         bindTile(
             binding.tileAdb,
             R.drawable.ic_server_ok_24dp,
-            R.string.home_adb_title_plain,
+            R.string.home_adb_tile_title,
             R.string.home_checks_adb_sub,
         ) {
             MaterialAlertDialogBuilder(context)
@@ -174,6 +183,21 @@ class HomeQuickGridViewHolder(
         }
     }
 
+    /** Keep bottom row as two equal halves; undo any prior full-width ADB stretch. */
+    private fun ensureEqualHalfTiles() {
+        val density = itemView.resources.displayMetrics.density
+        val half = (HALF_MARGIN_PX_FALLBACK * density).toInt()
+        listOf(binding.tileRoot.root, binding.tileAdb.root).forEachIndexed { index, view ->
+            view.isVisible = true
+            val lp = view.layoutParams as? LinearLayout.LayoutParams ?: return@forEachIndexed
+            lp.width = 0
+            lp.weight = 1f
+            lp.marginStart = if (index == 0) 0 else half
+            lp.marginEnd = if (index == 0) half else 0
+            view.layoutParams = lp
+        }
+    }
+
     private fun bindTile(
         tile: HomeActionTileBinding,
         @DrawableRes iconRes: Int,
@@ -186,9 +210,7 @@ class HomeQuickGridViewHolder(
         tile.tileIcon.setImageResource(iconRes)
         tile.tileTitle.setText(titleRes)
         tile.tileSubtitle.text = subtitleText ?: tile.root.context.getString(subtitleRes!!)
-        // Compact: hide long subtitles on quick tiles — title only look
         tile.tileSubtitle.isVisible = !subtitleText.isNullOrBlank() || subtitleRes != null
-        // Wireframe: no long copy on tiles — keep one short line max
         tile.root.isEnabled = enabled
         tile.root.alpha = if (enabled) 1f else 0.45f
         tile.root.setOnClickListener { onClick() }

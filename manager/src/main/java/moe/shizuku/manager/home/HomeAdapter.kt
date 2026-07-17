@@ -7,7 +7,6 @@ import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.UserHandleCompat
 import rikka.recyclerview.IdBasedRecyclerViewAdapter
 import rikka.recyclerview.IndexCreatorPool
-import rikka.shizuku.Shizuku
 
 class HomeAdapter(private val homeModel: HomeViewModel, private val appsModel: AppsViewModel, private val scope: CoroutineScope) :
     IdBasedRecyclerViewAdapter(ArrayList()) {
@@ -18,13 +17,9 @@ class HomeAdapter(private val homeModel: HomeViewModel, private val appsModel: A
     }
 
     companion object {
-
         private const val ID_STATUS = 0L
-        private const val ID_APPS = 1L
-        private const val ID_TERMINAL = 2L
-        private const val ID_START_ROOT = 3L
-        private const val ID_START_WADB = 4L
-        private const val ID_START_ADB = 5L
+        private const val ID_WADB = 1L
+        private const val ID_QUICK = 2L
         private const val ID_LEARN_MORE = 6L
         private const val ID_ADB_PERMISSION_LIMITED = 7L
         private const val ID_AUTOMATION = 8L
@@ -43,40 +38,38 @@ class HomeAdapter(private val homeModel: HomeViewModel, private val appsModel: A
         val isPrimaryUser = UserHandleCompat.myUserId() == 0
 
         clear()
-        addItem(ServerStatusViewHolder.CREATOR, status, ID_STATUS)
+        addItem(ServerStatusViewHolder.creator(scope), status, ID_STATUS)
 
-        // Always show apps card: when service is down binder is empty — explain instead of hiding.
+        // ① Independent wireless card (no long description)
+        if (isPrimaryUser &&
+            (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ||
+                EnvironmentUtils.isTelevision() ||
+                EnvironmentUtils.getAdbTcpPort() > 0)
+        ) {
+            addItem(StartWirelessAdbViewHolder.creator(scope), null, ID_WADB)
+        }
+
         val appsCount = when {
             !running -> -1
             appsModel.grantedCount.value?.status == rikka.lifecycle.Status.ERROR -> -2
             else -> grantedCount
         }
-        addItem(ManageAppsViewHolder.CREATOR, status to appsCount, ID_APPS)
-
-        if (adbPermission) {
-            addItem(TerminalViewHolder.CREATOR, status, ID_TERMINAL)
-        }
+        // ② Quick 2×2: Apps / Terminal / Root / PC ADB
+        addItem(
+            HomeQuickGridViewHolder.CREATOR,
+            HomeQuickGridPayload(
+                status = status,
+                grantedCount = appsCount,
+                rootRestart = running && status.uid == 0,
+            ),
+            ID_QUICK,
+        )
 
         if (running && !adbPermission) {
             addItem(AdbPermissionLimitedViewHolder.CREATOR, status, ID_ADB_PERMISSION_LIMITED)
         }
-
-        if (isPrimaryUser) {
-            val rootRestart = running && status.uid == 0
-
-            if (EnvironmentUtils.isRooted()) addItem(StartRootViewHolder.CREATOR, rootRestart, ID_START_ROOT)
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ||
-                EnvironmentUtils.isTelevision() ||
-                EnvironmentUtils.getAdbTcpPort() > 0
-            ) addItem(StartWirelessAdbViewHolder.creator(scope), null, ID_START_WADB)
-
-            addItem(StartAdbViewHolder.CREATOR, null, ID_START_ADB)
-        }
         addItem(AutomationViewHolder.CREATOR, null, ID_AUTOMATION)
-
         addItem(StealthViewHolder.CREATOR, null, ID_STEALTH)
-
         addItem(LearnMoreViewHolder.CREATOR, null, ID_LEARN_MORE)
         notifyDataSetChanged()
     }

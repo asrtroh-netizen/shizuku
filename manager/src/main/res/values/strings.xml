@@ -60,6 +60,10 @@
     <string name="home_checks_adb_sub">PC ADB</string>
     <string name="home_wireless_adb_title_plain">Wireless debugging</string>
     <string name="home_adb_title_plain">Start via computer (ADB)</string>
+    <string name="home_terminal_title_plain">Terminal</string>
+    <string name="home_adb_tile_title">PC ADB</string>
+    <string name="home_apps_tile_sub">Authorized apps</string>
+    <string name="home_terminal_tile_sub">Shell via Shizuku</string>
 
     <string name="home_app_management_waiting_service">Start Shizuku first — the authorized apps list is empty until the service is running.</string>
     <string name="home_app_management_binder_unavailable">Cannot read authorized apps (service binder unavailable). Start or restart Shizuku, then open again.</string>
