@@ -29,7 +29,6 @@ import moe.shizuku.manager.ktx.toHtml
 import moe.shizuku.manager.management.AppsViewModel
 import moe.shizuku.manager.settings.SettingsActivity
 import moe.shizuku.manager.utils.AppIconCache
-import moe.shizuku.manager.utils.CustomTabsHelper
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.ShizukuStateMachine
@@ -49,11 +48,16 @@ abstract class HomeActivity : AppBarActivity() {
     private val adapter by unsafeLazy { HomeAdapter(homeModel, appsModel, lifecycleScope) }
 
     private val stateListener: (ShizukuStateMachine.State) -> Unit = {
-        if (ShizukuStateMachine.isRunning()) {
-            checkServerStatus()
-            appsModel.load()
-        } else if (ShizukuStateMachine.isDead()) {
-            checkServerStatus()
+        // Only reload when settled; STARTING spam was causing list flicker + blue flash.
+        when (it) {
+            ShizukuStateMachine.State.RUNNING -> {
+                checkServerStatus()
+                appsModel.load()
+            }
+            ShizukuStateMachine.State.STOPPED,
+            ShizukuStateMachine.State.CRASHED,
+            -> checkServerStatus()
+            else -> Unit
         }
     }
 
@@ -215,10 +219,6 @@ abstract class HomeActivity : AppBarActivity() {
                     lifecycleScope.launch {
                         UpdateHelper.checkAndInstallUpdates()
                     }
-                }
-
-                binding.btnDonate.setOnClickListener {
-                    CustomTabsHelper.launchUrlOrCopy(this, "https://www.buymeacoffee.com/thedjchi")
                 }
 
                 val dialog = MaterialAlertDialogBuilder(this)

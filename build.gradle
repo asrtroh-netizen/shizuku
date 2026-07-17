@@ -33,10 +33,11 @@ try {
 } catch (Throwable ignored) {
     gitCountText = ""
 }
-def gitCommitCount = gitCountText.isInteger() ? Integer.parseInt(gitCountText) : 13700
-def baseVersionName = "13.7.2"
+def gitCommitCount = gitCountText.isInteger() ? Integer.parseInt(gitCountText) : 15000
+def baseVersionName = "V15.0"
 def isBeta = project.hasProperty("beta")
 ext {
+    // Public version brand: V15.0 (replaces legacy 13.6.x naming).
     versionCode = gitCommitCount
-    versionName = "${baseVersionName}${if (isBeta) "-beta" else ""}-asrtroh"
+    versionName = "${baseVersionName}${if (isBeta) "-beta" else ""}"
 }

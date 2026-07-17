@@ -15,6 +15,49 @@
     <string name="home_status_wifi_on">已连接</string>
     <string name="home_status_wifi_off">未连接</string>
     <string name="home_status_detail_body">状态：%1$s\n模式：%2$s\n版本：%3$s\nUID：%4$s\nWi‑Fi STA：%5$s\nADB 权限：%6$s\nTCP 模式：%7$s\n开机自启：%8$s</string>
+
+    <!-- OneKuku 风格四态状态卡 -->
+    <string name="home_hero_eyebrow">服务</string>
+    <string name="home_hero_title_inactive">未激活</string>
+    <string name="home_hero_title_activating">激活中…</string>
+    <string name="home_hero_pill_inactive">未激活</string>
+    <string name="home_hero_pill_activating">激活中</string>
+    <string name="home_hero_pill_ready">就绪</string>
+    <string name="home_hero_pill_sleeping">休眠</string>
+    <string name="home_hero_subtitle_inactive">Shizuku 服务未运行</string>
+    <string name="home_hero_subtitle_activating">正在启动服务…</string>
+    <string name="home_hero_detail_inactive">可用无线调试激活。请保持 Wi‑Fi 连接。</string>
+    <string name="home_hero_detail_activating">请稍候。解锁手机并保持 Wi‑Fi。</string>
+    <string name="home_hero_stage_inactive">未激活</string>
+    <string name="home_hero_stage_activating">激活中</string>
+    <string name="home_hero_stage_ready">就绪</string>
+    <string name="home_hero_stage_sleeping">休眠</string>
+    <string name="home_hero_action_activate">立即激活</string>
+    <string name="home_hero_action_activating">激活中…</string>
+    <string name="home_hero_action_detail">查看详情</string>
+    <string name="home_hero_action_activate_sub">将走无线调试启动流程</string>
+
+    <!-- 检查页风格 2×2 -->
+    <string name="home_checks_title">检查</string>
+    <string name="home_checks_subtitle">点按卡片查看详情；除非你确认，不会改设置。</string>
+    <string name="home_checks_diag_title">服务诊断</string>
+    <string name="home_checks_diag_sub">运行状态、版本、Wi‑Fi</string>
+    <string name="home_checks_diag_detail">状态：%1$s\n版本：%2$s\nUID：%3$s\nWi‑Fi：%4$s\nADB 权限：%5$s\nTCP 模式：%6$s</string>
+    <string name="home_checks_apps_sub_waiting">请先启动 Shizuku</string>
+    <string name="home_checks_start_title">无线启动</string>
+    <string name="home_checks_start_sub">通过无线调试启动</string>
+    <string name="home_checks_start_detail">将使用无线调试（或 TCP）启动 Shizuku。首次可能需要配对。</string>
+    <string name="home_checks_boot_title">自启与看门狗</string>
+    <string name="home_checks_boot_sub">开机自启与保护状态</string>
+    <string name="home_quick_entry_title">快捷入口</string>
+    <string name="home_root_title_plain">Root 启动</string>
+    <string name="home_root_tile_confirm">用 Root 启动 / 重启 Shizuku？</string>
+    <string name="home_root_tile_unavailable">需要 Root</string>
+    <string name="home_root_tile_unavailable_detail">当前设备未 Root。请改用无线调试或电脑 ADB 启动。</string>
+    <string name="home_checks_adb_sub">电脑 ADB</string>
+    <string name="home_wireless_adb_title_plain">无线调试启动</string>
+    <string name="home_adb_title_plain">通过电脑启动（ADB）</string>
+
     <string name="home_app_management_waiting_service">请先启动 Shizuku——服务未运行时授权列表会是空的。</string>
     <string name="home_app_management_binder_unavailable">读不到授权应用（服务 binder 不可用）。请先启动/重启 Shizuku 再打开。</string>
     <!-- Home - Adb -->
@@ -159,6 +202,9 @@
     <string name="settings_advanced">高级</string>
     <string name="settings_legacy_pairing">传统配对</string>
     <string name="settings_legacy_pairing_summary">在对话框中输入配对码，而不是在通知中输入</string>
+    <string name="settings_auto_pairing_notification">自动读取配对码</string>
+    <string name="settings_auto_pairing_notification_summary">从系统「设置」通知里读取 6 位配对码（需开启通知使用权）</string>
+    <string name="settings_auto_pairing_notification_open_failed">无法打开通知使用权设置</string>
     <!-- Bug Report Dialog -->
     <string name="bug_report_dialog_before_reporting">首先，请执行以下操作：</string>
     <string name="bug_report_dialog_update">请检查您是否正在使用^1。</string>
@@ -207,7 +253,8 @@
     <string name="notification_adb_pairing_stop_searching">停止搜索</string>
     <string name="notification_adb_pairing_working_title">正在进行配对</string>
     <string name="notification_adb_pairing_succeed_title">配对成功</string>
-    <string name="notification_adb_pairing_succeed_text">您现在可以启动 Shizuku 服务了。</string>
+    <string name="notification_adb_pairing_succeed_text">点「启动」立即拉起 Shizuku。</string>
+    <string name="notification_adb_pairing_succeed_starting">配对成功，正在启动 Shizuku…</string>
     <string name="notification_adb_pairing_failed_title">配对失败</string>
     <string name="notification_adb_pairing_retry">重试</string>
     <!-- Permission related, appears in system permission UI -->

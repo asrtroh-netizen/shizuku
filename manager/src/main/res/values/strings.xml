@@ -18,6 +18,49 @@
     <string name="home_status_wifi_on">on</string>
     <string name="home_status_wifi_off">off</string>
     <string name="home_status_detail_body">State: %1$s\nMode: %2$s\nVersion: %3$s\nUID: %4$s\nWi‑Fi STA: %5$s\nADB permission: %6$s\nTCP mode: %7$s\nStart on boot: %8$s</string>
+
+    <!-- OneKuku-style four-state hero -->
+    <string name="home_hero_eyebrow">Service</string>
+    <string name="home_hero_title_inactive">Not activated</string>
+    <string name="home_hero_title_activating">Activating…</string>
+    <string name="home_hero_pill_inactive">Inactive</string>
+    <string name="home_hero_pill_activating">Activating</string>
+    <string name="home_hero_pill_ready">Ready</string>
+    <string name="home_hero_pill_sleeping">Sleeping</string>
+    <string name="home_hero_subtitle_inactive">Shizuku is not running</string>
+    <string name="home_hero_subtitle_activating">Starting service…</string>
+    <string name="home_hero_detail_inactive">Use wireless debugging to activate. Keep Wi‑Fi on.</string>
+    <string name="home_hero_detail_activating">Please wait. Unlock the phone and stay on Wi‑Fi.</string>
+    <string name="home_hero_stage_inactive">Inactive</string>
+    <string name="home_hero_stage_activating">Activating</string>
+    <string name="home_hero_stage_ready">Ready</string>
+    <string name="home_hero_stage_sleeping">Sleeping</string>
+    <string name="home_hero_action_activate">Activate</string>
+    <string name="home_hero_action_activating">Activating…</string>
+    <string name="home_hero_action_detail">View details</string>
+    <string name="home_hero_action_activate_sub">Opens wireless debugging start flow</string>
+
+    <!-- Diagnostics-style 2×2 checks -->
+    <string name="home_checks_title">Checks</string>
+    <string name="home_checks_subtitle">Tap a card for details. No settings are changed unless you confirm.</string>
+    <string name="home_checks_diag_title">Service diag</string>
+    <string name="home_checks_diag_sub">Running state, version, Wi‑Fi</string>
+    <string name="home_checks_diag_detail">State: %1$s\nVersion: %2$s\nUID: %3$s\nWi‑Fi: %4$s\nADB permission: %5$s\nTCP mode: %6$s</string>
+    <string name="home_checks_apps_sub_waiting">Start Shizuku first</string>
+    <string name="home_checks_start_title">Wireless start</string>
+    <string name="home_checks_start_sub">Start via wireless debugging</string>
+    <string name="home_checks_start_detail">This starts Shizuku using wireless debugging (or TCP). Pairing may be required once.</string>
+    <string name="home_checks_boot_title">Boot &amp; Watchdog</string>
+    <string name="home_checks_boot_sub">Autostart and protect status</string>
+    <string name="home_quick_entry_title">Quick actions</string>
+    <string name="home_root_title_plain">Root start</string>
+    <string name="home_root_tile_confirm">Start or restart Shizuku with root?</string>
+    <string name="home_root_tile_unavailable">Root required</string>
+    <string name="home_root_tile_unavailable_detail">This device is not rooted. Use wireless debugging or PC ADB instead.</string>
+    <string name="home_checks_adb_sub">PC ADB</string>
+    <string name="home_wireless_adb_title_plain">Wireless debugging</string>
+    <string name="home_adb_title_plain">Start via computer (ADB)</string>
+
     <string name="home_app_management_waiting_service">Start Shizuku first — the authorized apps list is empty until the service is running.</string>
     <string name="home_app_management_binder_unavailable">Cannot read authorized apps (service binder unavailable). Start or restart Shizuku, then open again.</string>
 
@@ -198,6 +241,9 @@
     <string name="settings_advanced">Advanced</string>
     <string name="settings_legacy_pairing">Legacy pairing</string>
     <string name="settings_legacy_pairing_summary">Enter the pairing code in a dialog instead of a notification</string>
+    <string name="settings_auto_pairing_notification">Auto-read pairing code</string>
+    <string name="settings_auto_pairing_notification_summary">Read the 6-digit code from Settings notifications (needs notification access)</string>
+    <string name="settings_auto_pairing_notification_open_failed">Cannot open notification access settings</string>
 
     <!-- Bug Report Dialog -->
     <string name="bug_report_dialog_before_reporting">First, please do the following:</string>
@@ -244,7 +290,6 @@
     <string name="action_about">About</string>
     <string name="about_dialog_button_close">Close</string>
     <string name="about_view_source_code"><![CDATA[View source code at %s]]></string>
-    <string name="buy_me_a_coffee">Buy me a coffee</string>
 
     <!-- Start/Stop -->
      <string name="start">Start</string>
@@ -265,7 +310,8 @@
     <string name="notification_adb_pairing_stop_searching">Stop searching</string>
     <string name="notification_adb_pairing_working_title">Pairing in progress</string>
     <string name="notification_adb_pairing_succeed_title">Pairing successful</string>
-    <string name="notification_adb_pairing_succeed_text">You can start Shizuku service now.</string>
+    <string name="notification_adb_pairing_succeed_text">Tap Start to launch Shizuku now.</string>
+    <string name="notification_adb_pairing_succeed_starting">Pairing OK — starting Shizuku…</string>
     <string name="notification_adb_pairing_failed_title">Pairing failed</string>
     <string name="notification_adb_pairing_retry">Retry</string>
     <string name="notification_auth_missing_title">Auth token required</string>
