@@ -115,18 +115,19 @@ class ServerStatusViewHolder(
 
         applyStageStrip(resolveLitCount(hero), fg)
 
-        val busy = hero == HeroState.ACTIVATING
-        binding.heroAction.isEnabled = !busy
+        binding.heroAction.isEnabled = true
         binding.heroAction.text = context.getString(
             when (hero) {
                 HeroState.INACTIVE -> R.string.home_hero_action_activate
-                HeroState.ACTIVATING -> R.string.home_hero_action_activating
+                HeroState.ACTIVATING -> R.string.home_hero_action_retry
                 HeroState.READY, HeroState.SLEEPING -> R.string.home_hero_action_detail
             },
         )
-        binding.heroActionSub.isVisible = hero == HeroState.INACTIVE
+        binding.heroActionSub.isVisible = hero == HeroState.INACTIVE || hero == HeroState.ACTIVATING
         if (hero == HeroState.INACTIVE) {
             binding.heroActionSub.setText(R.string.home_hero_action_activate_sub)
+        } else if (hero == HeroState.ACTIVATING) {
+            binding.heroActionSub.setText(R.string.home_hero_action_retry_sub)
         }
     }
 
@@ -191,7 +192,8 @@ class ServerStatusViewHolder(
         val hero = resolveHeroState(data)
         when (hero) {
             HeroState.INACTIVE -> StartWirelessAdbViewHolder.start(itemView.context, scope)
-            HeroState.ACTIVATING -> Unit
+            // Allow retry when stuck on stale STARTING (was a no-op → permanent 激活中).
+            HeroState.ACTIVATING -> StartWirelessAdbViewHolder.start(itemView.context, scope)
             HeroState.READY, HeroState.SLEEPING -> showDetail()
         }
     }

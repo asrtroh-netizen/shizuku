@@ -39,19 +39,38 @@ object ShizukuReceiverStarter {
 
     fun start(context: Context, forceStart: Boolean = false) {
         if ((UserHandleCompat.myUserId() > 0 || ShizukuStateMachine.isRunning()) && !forceStart) return
+        // Avoid REPLACE-cancelling an in-flight start into a sticky STARTING orphan.
+        if (!forceStart && ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING) return
 
-        if (ShizukuSettings.getLastLaunchMode() == LaunchMethod.ROOT) {
+        val mode = ShizukuSettings.getLastLaunchMode()
+        // Clean install / wiped prefs: mode is UNKNOWN. If we already have
+        // WRITE_SECURE_SETTINGS (wireless path used before), treat as ADB so
+        // OneKuku-style boot autostart is not silently skipped.
+        val asAdb = mode == LaunchMethod.ADB ||
+            (mode == LaunchMethod.UNKNOWN &&
+                context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED &&
+                (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ||
+                    EnvironmentUtils.isTelevision() ||
+                    EnvironmentUtils.getAdbTcpPort() > 0))
+
+        if (mode == LaunchMethod.ROOT) {
             rootStart(context)
-        } else if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || EnvironmentUtils.isTelevision() || EnvironmentUtils.getAdbTcpPort() > 0)
-            && ShizukuSettings.getLastLaunchMode() == LaunchMethod.ADB) {
+        } else if (asAdb &&
+            (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ||
+                EnvironmentUtils.isTelevision() ||
+                EnvironmentUtils.getAdbTcpPort() > 0)
+        ) {
                 if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
+                    if (mode == LaunchMethod.UNKNOWN) {
+                        ShizukuSettings.setLastLaunchMode(LaunchMethod.ADB)
+                    }
                     AdbStartWorker.enqueue(context)
                     updateNotification(context, WorkerState.AWAITING_WIFI)
                 } else {
                     showPermissionErrorNotification(context)
                 }
         } else {
-            Log.w(AppConstants.TAG, "Background start not supported")
+            Log.w(AppConstants.TAG, "Background start not supported (mode=$mode)")
         }
     }
 

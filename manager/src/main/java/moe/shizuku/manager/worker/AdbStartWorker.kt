@@ -171,7 +171,10 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 }
             }
             updateNotification(applicationContext, state)
-
+            // Cancelled workers used to leave STARTING stuck → permanent「激活中」.
+            if (ShizukuStateMachine.get() != ShizukuStateMachine.State.RUNNING) {
+                ShizukuStateMachine.update()
+            }
             throw e
         } catch (e: Exception) {
             val ignored = listOf(

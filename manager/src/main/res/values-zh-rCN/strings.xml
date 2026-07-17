@@ -34,8 +34,10 @@
     <string name="home_hero_stage_sleeping">休眠</string>
     <string name="home_hero_action_activate">立即激活</string>
     <string name="home_hero_action_activating">激活中…</string>
+    <string name="home_hero_action_retry">重试启动</string>
     <string name="home_hero_action_detail">查看详情</string>
     <string name="home_hero_action_activate_sub">将走无线调试启动流程</string>
+    <string name="home_hero_action_retry_sub">清除卡住的启动状态并重试</string>
 
     <!-- 检查页风格 2×2 -->
     <string name="home_checks_title">检查</string>

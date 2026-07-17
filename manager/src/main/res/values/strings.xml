@@ -37,8 +37,10 @@
     <string name="home_hero_stage_sleeping">Sleeping</string>
     <string name="home_hero_action_activate">Activate</string>
     <string name="home_hero_action_activating">Activating…</string>
+    <string name="home_hero_action_retry">Retry</string>
     <string name="home_hero_action_detail">View details</string>
     <string name="home_hero_action_activate_sub">Opens wireless debugging start flow</string>
+    <string name="home_hero_action_retry_sub">Clear stuck start and try again</string>
 
     <!-- Diagnostics-style 2×2 checks -->
     <string name="home_checks_title">Checks</string>

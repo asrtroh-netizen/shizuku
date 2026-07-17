@@ -65,6 +65,12 @@ object AdbStarter {
                     client.runCommand("shell:${Starter.internalCommand}")
                 }
             }
+        } catch (e: Throwable) {
+            // Leave STARTING only when binder is expected next (waitForBinder). Failures must clear.
+            if (ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING) {
+                ShizukuStateMachine.update()
+            }
+            throw e
         } finally {
             if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED)
                 Settings.Global.putInt(context.contentResolver, "adb_wifi_enabled", 0)

@@ -47,6 +47,7 @@ object ShizukuStateMachine {
     fun setDead() = transition {
         when (it) {
             State.RUNNING -> State.CRASHED
+            State.STARTING -> State.STOPPED // binder died while starting — never stick on ACTIVATING
             State.STOPPING -> {
                 try {
                     val permissionGranted = appContext.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED

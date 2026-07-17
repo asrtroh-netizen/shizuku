@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
-import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,10 +13,8 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
-import androidx.work.WorkManager
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import moe.shizuku.manager.Helps
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.R
@@ -26,14 +23,12 @@ import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.databinding.HomeItemContainerBinding
 import moe.shizuku.manager.databinding.HomeStartWirelessAdbBinding
 import moe.shizuku.manager.home.showAccessibilityDialog
-import moe.shizuku.manager.ktx.toHtml
 import moe.shizuku.manager.receiver.NotifCancelReceiver
 import moe.shizuku.manager.starter.StarterActivity
 import moe.shizuku.manager.utils.CustomTabsHelper
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import rikka.core.content.asActivity
-import rikka.html.text.HtmlCompat
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
 
@@ -51,8 +46,17 @@ class StartWirelessAdbViewHolder(binding: HomeStartWirelessAdbBinding, root: Vie
 
         fun start (context: Context, scope: CoroutineScope) {
             if (ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING) {
-                Toast.makeText(context, context.getString(R.string.toast_shizuku_already_starting), Toast.LENGTH_SHORT).show()
-                return
+                // Real in-flight start: binder may still be coming. Stale STARTING (orphan
+                // after cancel/REPLACE) must be cleared so the user can retry.
+                if (rikka.shizuku.Shizuku.pingBinder()) {
+                    Toast.makeText(context, context.getString(R.string.toast_shizuku_already_starting), Toast.LENGTH_SHORT).show()
+                    return
+                }
+                ShizukuStateMachine.update()
+                if (ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING) {
+                    Toast.makeText(context, context.getString(R.string.toast_shizuku_already_starting), Toast.LENGTH_SHORT).show()
+                    return
+                }
             }
 
             context.sendBroadcast(Intent(context, NotifCancelReceiver::class.java))
@@ -106,15 +110,12 @@ class StartWirelessAdbViewHolder(binding: HomeStartWirelessAdbBinding, root: Vie
             binding.button2.setOnClickListener { v: View ->
                 onPairClicked(v.context)
             }
-            binding.text1.movementMethod = LinkMovementMethod.getInstance()
-            binding.text1.text = context.getString(R.string.home_wireless_adb_description)
-                .toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
         } else {
-            binding.text1.text = context.getString(R.string.home_wireless_adb_description_pre_11)
-                .toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
             binding.button2.isVisible = false
             binding.button3.isVisible = false
         }
+        // Long description removed per home layout wireframe.
+        binding.text1.isVisible = false
     }
 
     override fun onBind(payloads: MutableList<Any>) {
