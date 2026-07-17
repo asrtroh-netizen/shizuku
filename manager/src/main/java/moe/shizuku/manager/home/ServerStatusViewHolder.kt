@@ -132,18 +132,17 @@ class ServerStatusViewHolder(
     }
 
     private fun resolveHeroState(status: ServiceStatus): HeroState {
-        // Binder / status wins over transient STARTING — avoids blue flicker while already up.
+        // Binder / RUNNING wins. Otherwise keep ACTIVATING sticky across brief STOPPED races
+        // so the hero card does not flash red ↔ white while starting.
         val running = status.isRunning || Shizuku.pingBinder() ||
             ShizukuStateMachine.get() == ShizukuStateMachine.State.RUNNING
         if (running) {
             return if (ShizukuSettings.isWatchdogRunning()) HeroState.READY else HeroState.SLEEPING
         }
-        return when (ShizukuStateMachine.get()) {
-            ShizukuStateMachine.State.STARTING,
-            ShizukuStateMachine.State.STOPPING,
-            -> HeroState.ACTIVATING
-            else -> HeroState.INACTIVE
+        if (ShizukuStateMachine.preferActivatingUi()) {
+            return HeroState.ACTIVATING
         }
+        return HeroState.INACTIVE
     }
 
     private fun resolveLitCount(hero: HeroState): Int = when (hero) {
@@ -192,8 +191,15 @@ class ServerStatusViewHolder(
         val hero = resolveHeroState(data)
         when (hero) {
             HeroState.INACTIVE -> StartWirelessAdbViewHolder.start(itemView.context, scope)
-            // Allow retry when stuck on stale STARTING (was a no-op → permanent 激活中).
-            HeroState.ACTIVATING -> StartWirelessAdbViewHolder.start(itemView.context, scope)
+            HeroState.ACTIVATING -> {
+                // Don't cancel/restart a live STARTING — that flashes the card and blocks activation.
+                if (ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING &&
+                    !ShizukuStateMachine.isStartingStale()
+                ) {
+                    return
+                }
+                StartWirelessAdbViewHolder.start(itemView.context, scope)
+            }
             HeroState.READY, HeroState.SLEEPING -> showDetail()
         }
     }

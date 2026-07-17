@@ -86,17 +86,16 @@ class StartWirelessAdbViewHolder(binding: HomeStartWirelessAdbBinding, root: Vie
 
         fun start (context: Context, scope: CoroutineScope) {
             if (ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING) {
-                // Real in-flight start: binder may still be coming. Stale STARTING (orphan
-                // after cancel/REPLACE) must be cleared so the user can retry.
                 if (Shizuku.pingBinder()) {
                     Toast.makeText(context, context.getString(R.string.toast_shizuku_already_starting), Toast.LENGTH_SHORT).show()
                     return
                 }
-                ShizukuStateMachine.update()
-                if (ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING) {
+                // Live STARTING: do not update()/restart — that flashes INACTIVE↔ACTIVATING and aborts ADB.
+                if (!ShizukuStateMachine.isStartingStale()) {
                     Toast.makeText(context, context.getString(R.string.toast_shizuku_already_starting), Toast.LENGTH_SHORT).show()
                     return
                 }
+                ShizukuStateMachine.update()
             }
 
             context.sendBroadcast(Intent(context, NotifCancelReceiver::class.java))
@@ -130,6 +129,8 @@ class StartWirelessAdbViewHolder(binding: HomeStartWirelessAdbBinding, root: Vie
                 AdbDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
             // TCP already listening — start in place; do not jump to StarterActivity.
             } else {
+                // Paint ACTIVATING immediately so reload races don't flash red first.
+                ShizukuStateMachine.set(ShizukuStateMachine.State.STARTING)
                 startAdbInPlace(context, scope, tcpPort)
             }
         }

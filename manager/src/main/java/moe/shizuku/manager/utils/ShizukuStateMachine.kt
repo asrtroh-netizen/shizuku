@@ -2,9 +2,11 @@ package moe.shizuku.manager.utils
 
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.pm.PackageManager
+import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -21,6 +23,9 @@ object ShizukuStateMachine {
 
     private var state = AtomicReference<State>(State.STOPPED)
     private val listeners = CopyOnWriteArrayList<(State) -> Unit>()
+    /** ElapsedRealtime when we last entered STARTING — used to absorb brief STOPPED races in UI. */
+    private val startingEnteredAt = AtomicLong(0L)
+    private val leftStartingAt = AtomicLong(0L)
 
     init {
         Shizuku.addBinderReceivedListenerSticky(
@@ -36,7 +41,12 @@ object ShizukuStateMachine {
     private fun transition(transform: (State) -> State) {
         val oldState = state.getAndUpdate(transform)
         val newState = transform(oldState)
-        if(oldState != newState) {
+        if (oldState != newState) {
+            if (newState == State.STARTING) {
+                startingEnteredAt.set(SystemClock.elapsedRealtime())
+            } else if (oldState == State.STARTING) {
+                leftStartingAt.set(SystemClock.elapsedRealtime())
+            }
             listeners.forEach { it(newState) }
             Log.d("ShizukuStateMachine", newState.toString())
         }
@@ -47,7 +57,7 @@ object ShizukuStateMachine {
     fun setDead() = transition {
         when (it) {
             State.RUNNING -> State.CRASHED
-            State.STARTING -> State.STOPPED // binder died while starting — never stick on ACTIVATING
+            State.STARTING -> State.STOPPED
             State.STOPPING -> {
                 try {
                     val permissionGranted = appContext.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED
@@ -65,17 +75,35 @@ object ShizukuStateMachine {
     }
 
     fun update(): State {
-        val state = if (Shizuku.pingBinder()) State.RUNNING else State.STOPPED
-        set(state)
-        return state
+        val next = if (Shizuku.pingBinder()) State.RUNNING else State.STOPPED
+        set(next)
+        return next
     }
 
-    fun isRunning(): Boolean {
-        return get() == State.RUNNING
+    fun isRunning(): Boolean = get() == State.RUNNING
+
+    fun isDead(): Boolean = get() == State.STOPPED || get() == State.CRASHED
+
+    /**
+     * UI should show「激活中」while STARTING/STOPPING, and for a short window after leaving
+     * STARTING for non-RUNNING — cancels/REPLACE used to flash INACTIVE(red) ↔ ACTIVATING.
+     */
+    fun preferActivatingUi(graceMs: Long = 2_000L): Boolean {
+        return when (get()) {
+            State.STARTING, State.STOPPING -> true
+            State.RUNNING -> false
+            else -> {
+                val left = leftStartingAt.get()
+                left > 0L && SystemClock.elapsedRealtime() - left < graceMs
+            }
+        }
     }
 
-    fun isDead(): Boolean {
-        return (get() == State.STOPPED || get() == State.CRASHED) 
+    /** True if STARTING has been stuck long enough that a user retry is warranted. */
+    fun isStartingStale(staleMs: Long = 30_000L): Boolean {
+        if (get() != State.STARTING) return false
+        val entered = startingEnteredAt.get()
+        return entered > 0L && SystemClock.elapsedRealtime() - entered >= staleMs
     }
 
     fun addListener(listener: (State) -> Unit) {
@@ -92,5 +120,4 @@ object ShizukuStateMachine {
         addListener(listener)
         awaitClose { removeListener(listener) }
     }
-
 }

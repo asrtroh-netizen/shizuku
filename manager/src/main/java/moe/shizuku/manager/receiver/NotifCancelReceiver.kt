@@ -13,8 +13,12 @@ class NotifCancelReceiver : BroadcastReceiver() {
         WorkManager.getInstance(context).cancelUniqueWork("adb_start_worker")
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.cancel(ShizukuReceiverStarter.NOTIFICATION_ID)
-        // Cancelling the worker must not leave STARTING sticky (Hero stuck on 激活中).
-        if (!Shizuku.pingBinder() && ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING) {
+        // Only clear sticky STARTING when cancelling a background worker path — and only if
+        // binder is down. Avoid clearing a live in-place TCP start (would flash the hero card).
+        if (!Shizuku.pingBinder() &&
+            ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING &&
+            ShizukuStateMachine.isStartingStale(3_000L)
+        ) {
             ShizukuStateMachine.update()
         }
     }

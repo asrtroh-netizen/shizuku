@@ -48,7 +48,7 @@ abstract class HomeActivity : AppBarActivity() {
     private val adapter by unsafeLazy { HomeAdapter(homeModel, appsModel, lifecycleScope) }
 
     private val stateListener: (ShizukuStateMachine.State) -> Unit = {
-        // Only reload when settled; STARTING spam was causing list flicker + blue flash.
+        // Only full-reload when settled; STARTING spam was causing list flicker.
         when (it) {
             ShizukuStateMachine.State.RUNNING -> {
                 checkServerStatus()
@@ -57,7 +57,12 @@ abstract class HomeActivity : AppBarActivity() {
             ShizukuStateMachine.State.STOPPED,
             ShizukuStateMachine.State.CRASHED,
             -> checkServerStatus()
-            else -> Unit
+            ShizukuStateMachine.State.STARTING,
+            ShizukuStateMachine.State.STOPPING,
+            -> {
+                // Refresh hero only — avoid notifyDataSetChanged flash.
+                if (adapter.itemCount > 0) adapter.notifyItemChanged(0)
+            }
         }
     }
 
@@ -69,7 +74,12 @@ abstract class HomeActivity : AppBarActivity() {
         homeModel.serviceStatus.observe(this) {
             if (it.status == Status.SUCCESS) {
                 val status = homeModel.serviceStatus.value?.data ?: return@observe
-                adapter.updateData()
+                // Full list rebuild while starting causes the hero card to flash.
+                if (!ShizukuStateMachine.preferActivatingUi()) {
+                    adapter.updateData()
+                } else {
+                    adapter.notifyItemChanged(0)
+                }
                 ShizukuSettings.setLastLaunchMode(if (status.uid == 0) ShizukuSettings.LaunchMethod.ROOT else ShizukuSettings.LaunchMethod.ADB)
             }
         }
@@ -102,6 +112,8 @@ abstract class HomeActivity : AppBarActivity() {
 
         appsModel.grantedCount.observe(this) {
             if (it.status == Status.SUCCESS || it.status == Status.ERROR) {
+                // Ignore auth-count flaps while activating — they rebuild the whole home list.
+                if (ShizukuStateMachine.preferActivatingUi()) return@observe
                 adapter.updateData()
             }
         }
