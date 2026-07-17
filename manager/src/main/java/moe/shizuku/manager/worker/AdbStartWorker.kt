@@ -55,13 +55,16 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // OneKuku boot path: wait for remembered Wi‑Fi STA before mDNS / wireless ADB.
             // TCP mode (isWifiRequired=false) skips this entirely — TcpIp preserved.
             if (EnvironmentUtils.isWifiRequired()) {
-                updateNotification(applicationContext, WorkerState.AWAITING_WIFI)
-                val wifiOk = withContext(Dispatchers.IO) {
-                    EnvironmentUtils.waitForWifiClient(applicationContext, BOOT_WIFI_WAIT_MS)
-                }
-                if (!wifiOk) {
+                // Already on old Wi‑Fi → skip the long wait (BootAdbStartService may have waited).
+                if (!EnvironmentUtils.isWifiClientConnected(applicationContext)) {
                     updateNotification(applicationContext, WorkerState.AWAITING_WIFI)
-                    return Result.retry()
+                    val wifiOk = withContext(Dispatchers.IO) {
+                        EnvironmentUtils.waitForWifiClient(applicationContext, BOOT_WIFI_WAIT_MS)
+                    }
+                    if (!wifiOk) {
+                        updateNotification(applicationContext, WorkerState.AWAITING_WIFI)
+                        return Result.retry()
+                    }
                 }
                 updateNotification(applicationContext, WorkerState.RUNNING)
 
@@ -242,9 +245,10 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 .setBackoffCriteria(BackoffPolicy.LINEAR, 15_000L, TimeUnit.MILLISECONDS)
                 .build()
 
+            // KEEP: do not cancel an in-flight start (REPLACE caused re-wait + "tap again, wait forever").
             WorkManager.getInstance(context).enqueueUniqueWork(
                 "adb_start_worker",
-                ExistingWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 request
             )
         }

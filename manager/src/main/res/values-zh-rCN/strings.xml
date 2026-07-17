@@ -22,14 +22,14 @@
     <string name="home_hero_title_activating">激活中…</string>
     <string name="home_hero_pill_inactive">未激活</string>
     <string name="home_hero_pill_activating">激活中</string>
-    <string name="home_hero_pill_ready">就绪</string>
+    <string name="home_hero_pill_ready">Active</string>
     <string name="home_hero_subtitle_inactive">Shizuku 服务未运行</string>
     <string name="home_hero_subtitle_activating">正在启动服务…</string>
-    <string name="home_hero_detail_inactive">可用无线调试激活。请保持 Wi‑Fi 连接。</string>
+    <string name="home_hero_detail_inactive">请用下方无线调试启动。请保持 Wi‑Fi 连接。</string>
     <string name="home_hero_detail_activating">请稍候。解锁手机并保持 Wi‑Fi。</string>
     <string name="home_hero_stage_inactive">未激活</string>
     <string name="home_hero_stage_activating">激活中</string>
-    <string name="home_hero_stage_ready">就绪</string>
+    <string name="home_hero_stage_ready">已就绪</string>
     <string name="home_hero_action_activate">立即激活</string>
     <string name="home_hero_action_activating">激活中…</string>
     <string name="home_hero_action_retry">重试启动</string>

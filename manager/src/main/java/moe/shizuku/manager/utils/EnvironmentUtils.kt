@@ -40,14 +40,20 @@ object EnvironmentUtils {
     }
 
     /**
-     * True when a Wi‑Fi STA client is already up.
-     * Used so boot-start can skip WorkManager UNMETERED gating when the
-     * previously-paired network is already connected after reboot
-     * (WorkManager can stall on some OEMs if the constraint is already met at enqueue).
+     * True when any Wi‑Fi STA is up — not only when Wi‑Fi is the default route.
+     * Old/remembered Wi‑Fi often stays connected while cellular remains
+     * [ConnectivityManager.getActiveNetwork]; gating on activeNetwork alone
+     * skipped boot / late-WiFi autostart and forced a manual tap.
      */
     @JvmStatic
     fun isWifiClientConnected(context: Context = appContext): Boolean {
         val cm = context.getSystemService(ConnectivityManager::class.java) ?: return false
+        for (network in cm.allNetworks) {
+            val caps = cm.getNetworkCapabilities(network) ?: continue
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                return true
+            }
+        }
         val network = cm.activeNetwork ?: return false
         val caps = cm.getNetworkCapabilities(network) ?: return false
         return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
@@ -63,7 +69,7 @@ object EnvironmentUtils {
         while (System.currentTimeMillis() < deadline) {
             if (isWifiClientConnected(context)) return true
             try {
-                Thread.sleep(1_500L)
+                Thread.sleep(500L)
             } catch (_: InterruptedException) {
                 Thread.currentThread().interrupt()
                 break

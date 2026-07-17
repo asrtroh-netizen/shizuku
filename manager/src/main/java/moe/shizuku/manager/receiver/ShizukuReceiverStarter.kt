@@ -39,8 +39,13 @@ object ShizukuReceiverStarter {
 
     fun start(context: Context, forceStart: Boolean = false) {
         if ((UserHandleCompat.myUserId() > 0 || ShizukuStateMachine.isRunning()) && !forceStart) return
-        // Avoid REPLACE-cancelling an in-flight start into a sticky STARTING orphan.
-        if (!forceStart && ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING) return
+        // Skip only a live STARTING; stale STARTING must not block late Wi‑Fi autostart.
+        if (!forceStart &&
+            ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING &&
+            !ShizukuStateMachine.isStartingStale()
+        ) {
+            return
+        }
 
         val mode = ShizukuSettings.getLastLaunchMode()
         // Clean install / wiped prefs: mode is UNKNOWN. If we already have

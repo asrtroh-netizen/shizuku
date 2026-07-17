@@ -23,9 +23,8 @@ import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuApiConstants
 
 /**
- * Three-state hero card (no sleeping):
- * inactive (red) → activating → ready (white).
- * Survival stays on Watchdog / boot / binder wake — UI no longer labels Running∧¬Watchdog as sleep.
+ * Two-state hero card: inactive (red) / ready (white + Shizuku Active).
+ * Activate CTA removed — use the wireless start tile below. Autostart stays on boot/Wi‑Fi path.
  */
 class ServerStatusViewHolder(
     private val binding: HomeServerStatusBinding,
@@ -33,7 +32,7 @@ class ServerStatusViewHolder(
     private val scope: CoroutineScope,
 ) : BaseViewHolder<ServiceStatus>(root) {
 
-    enum class HeroState { INACTIVE, ACTIVATING, READY }
+    enum class HeroState { INACTIVE, READY }
 
     companion object {
         fun creator(scope: CoroutineScope): Creator<ServiceStatus> {
@@ -46,9 +45,7 @@ class ServerStatusViewHolder(
     }
 
     init {
-        // Whole card opens detail; primary button handles activate / detail.
         root.setOnClickListener { showDetail() }
-        binding.heroAction.setOnClickListener { onPrimaryAction() }
     }
 
     override fun onBind() {
@@ -67,7 +64,6 @@ class ServerStatusViewHolder(
                 context,
                 when (hero) {
                     HeroState.INACTIVE -> R.drawable.ic_server_error_24dp
-                    HeroState.ACTIVATING -> R.drawable.ic_server_error_24dp
                     HeroState.READY -> R.drawable.ic_server_ok_24dp
                 },
             ),
@@ -79,127 +75,63 @@ class ServerStatusViewHolder(
         binding.heroPill.setTextColor(fg)
         binding.heroSubtitle.setTextColor(fg)
         binding.heroDetail.setTextColor(ColorUtils.setAlphaComponent(fg, 200))
-        binding.heroActionSub.setTextColor(ColorUtils.setAlphaComponent(fg, 184))
 
-        val settled = hero == HeroState.READY
-        binding.heroTitle.text = when (hero) {
-            HeroState.READY -> context.getString(R.string.app_name)
-            HeroState.INACTIVE -> context.getString(R.string.home_hero_title_inactive)
-            HeroState.ACTIVATING -> context.getString(R.string.home_hero_title_activating)
-        }
-        binding.heroPill.text = context.getString(
-            when (hero) {
-                HeroState.INACTIVE -> R.string.home_hero_pill_inactive
-                HeroState.ACTIVATING -> R.string.home_hero_pill_activating
-                HeroState.READY -> R.string.home_hero_pill_ready
-            },
-        )
-        binding.heroSubtitle.isVisible = !settled
-        binding.heroDetail.isVisible = !settled
-        if (!settled) {
-            binding.heroSubtitle.setText(
-                when (hero) {
-                    HeroState.INACTIVE -> R.string.home_hero_subtitle_inactive
-                    HeroState.ACTIVATING -> R.string.home_hero_subtitle_activating
-                    else -> R.string.home_hero_subtitle_inactive
-                },
-            )
-            binding.heroDetail.setText(
-                when (hero) {
-                    HeroState.INACTIVE -> R.string.home_hero_detail_inactive
-                    HeroState.ACTIVATING -> R.string.home_hero_detail_activating
-                    else -> R.string.home_hero_detail_inactive
-                },
-            )
+        // Ready: "Shizuku" + pill "Active". Inactive: title/pill 未激活.
+        when (hero) {
+            HeroState.READY -> {
+                binding.heroTitle.text = context.getString(R.string.app_name)
+                binding.heroPill.text = context.getString(R.string.home_hero_pill_ready)
+                binding.heroSubtitle.isVisible = false
+                binding.heroDetail.isVisible = false
+            }
+            HeroState.INACTIVE -> {
+                binding.heroTitle.text = context.getString(R.string.home_hero_title_inactive)
+                binding.heroPill.text = context.getString(R.string.home_hero_pill_inactive)
+                binding.heroSubtitle.isVisible = true
+                binding.heroDetail.isVisible = true
+                binding.heroSubtitle.setText(R.string.home_hero_subtitle_inactive)
+                binding.heroDetail.setText(R.string.home_hero_detail_inactive)
+            }
         }
 
-        applyStageStrip(resolveLitCount(hero), fg)
-
-        binding.heroAction.isEnabled = true
-        binding.heroAction.text = context.getString(
-            when (hero) {
-                HeroState.INACTIVE -> R.string.home_hero_action_activate
-                HeroState.ACTIVATING -> R.string.home_hero_action_retry
-                HeroState.READY -> R.string.home_hero_action_detail
-            },
-        )
-        binding.heroActionSub.isVisible = hero == HeroState.INACTIVE || hero == HeroState.ACTIVATING
-        if (hero == HeroState.INACTIVE) {
-            binding.heroActionSub.setText(R.string.home_hero_action_activate_sub)
-        } else if (hero == HeroState.ACTIVATING) {
-            binding.heroActionSub.setText(R.string.home_hero_action_retry_sub)
-        }
+        applyStageStrip(hero, fg)
     }
 
     private fun resolveHeroState(status: ServiceStatus): HeroState {
-        // Binder / RUNNING wins. Otherwise keep ACTIVATING sticky across brief STOPPED races
-        // so the hero card does not flash red ↔ white while starting.
         val running = status.isRunning || Shizuku.pingBinder() ||
             ShizukuStateMachine.get() == ShizukuStateMachine.State.RUNNING
-        if (running) {
-            return HeroState.READY
-        }
-        if (ShizukuStateMachine.preferActivatingUi()) {
-            return HeroState.ACTIVATING
-        }
+        if (running) return HeroState.READY
+        // Prefer activating UI still maps to inactive visually (no third CTA state).
         return HeroState.INACTIVE
-    }
-
-    private fun resolveLitCount(hero: HeroState): Int = when (hero) {
-        HeroState.INACTIVE -> 1
-        HeroState.ACTIVATING -> 2
-        HeroState.READY -> 3
     }
 
     private fun colorsFor(hero: HeroState): Pair<Int, Int> {
         val c = itemView.context
-        // Red when inactive; white for activating / ready (no blue).
         return when (hero) {
             HeroState.INACTIVE ->
                 ContextCompat.getColor(c, R.color.hero_inactive_bg) to
                     ContextCompat.getColor(c, R.color.hero_inactive_fg)
-            HeroState.ACTIVATING,
-            HeroState.READY,
-            ->
+            HeroState.READY ->
                 ContextCompat.getColor(c, R.color.hero_ready_bg) to
                     ContextCompat.getColor(c, R.color.hero_ready_fg)
         }
     }
 
-    private fun applyStageStrip(litCount: Int, fg: Int) {
-        val dots = listOf(binding.stageDot1, binding.stageDot2, binding.stageDot3)
-        val labels = listOf(binding.stageLabel1, binding.stageLabel2, binding.stageLabel3)
-        val lines = listOf(binding.stageLine1, binding.stageLine2)
+    private fun applyStageStrip(hero: HeroState, fg: Int) {
+        val litCount = if (hero == HeroState.READY) 2 else 1
+        val dots = listOf(binding.stageDot1, binding.stageDot2)
+        val labels = listOf(binding.stageLabel1, binding.stageLabel2)
+        val line = binding.stageLine1
         dots.forEachIndexed { index, view ->
             val lit = index < litCount
             val color = if (lit) fg else ColorUtils.setAlphaComponent(fg, 82)
             view.backgroundTintList = ColorStateList.valueOf(color)
             labels[index].setTextColor(color)
         }
-        lines.forEachIndexed { index, view ->
-            val lit = index + 1 < litCount
-            view.setBackgroundColor(
-                if (lit) ColorUtils.setAlphaComponent(fg, 140)
-                else ColorUtils.setAlphaComponent(fg, 46),
-            )
-        }
-    }
-
-    private fun onPrimaryAction() {
-        val hero = resolveHeroState(data)
-        when (hero) {
-            HeroState.INACTIVE -> StartWirelessAdbViewHolder.start(itemView.context, scope)
-            HeroState.ACTIVATING -> {
-                // Don't cancel/restart a live STARTING — that flashes the card and blocks activation.
-                if (ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING &&
-                    !ShizukuStateMachine.isStartingStale()
-                ) {
-                    return
-                }
-                StartWirelessAdbViewHolder.start(itemView.context, scope)
-            }
-            HeroState.READY -> showDetail()
-        }
+        line.setBackgroundColor(
+            if (litCount > 1) ColorUtils.setAlphaComponent(fg, 140)
+            else ColorUtils.setAlphaComponent(fg, 46),
+        )
     }
 
     private fun showDetail() {
@@ -214,7 +146,6 @@ class ServerStatusViewHolder(
         )
         val stateLabel = when (resolveHeroState(status)) {
             HeroState.INACTIVE -> context.getString(R.string.home_hero_pill_inactive)
-            HeroState.ACTIVATING -> context.getString(R.string.home_hero_pill_activating)
             HeroState.READY -> context.getString(R.string.home_hero_pill_ready)
         }
         val latest = "${Shizuku.getLatestServiceVersion()}.${ShizukuApiConstants.SERVER_PATCH_VERSION}"

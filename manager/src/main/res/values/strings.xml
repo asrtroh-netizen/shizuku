@@ -25,10 +25,10 @@
     <string name="home_hero_title_activating">Activating…</string>
     <string name="home_hero_pill_inactive">Inactive</string>
     <string name="home_hero_pill_activating">Activating</string>
-    <string name="home_hero_pill_ready">Ready</string>
+    <string name="home_hero_pill_ready">Active</string>
     <string name="home_hero_subtitle_inactive">Shizuku is not running</string>
     <string name="home_hero_subtitle_activating">Starting service…</string>
-    <string name="home_hero_detail_inactive">Use wireless debugging to activate. Keep Wi‑Fi on.</string>
+    <string name="home_hero_detail_inactive">Use wireless debugging below to start. Keep Wi‑Fi on.</string>
     <string name="home_hero_detail_activating">Please wait. Unlock the phone and stay on Wi‑Fi.</string>
     <string name="home_hero_stage_inactive">Inactive</string>
     <string name="home_hero_stage_activating">Activating</string>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Three-state hero: inactive / activating / ready (no sleeping) -->
+<!-- Two-state hero: inactive / ready (Shizuku + Active). No activate CTA. -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -48,9 +48,8 @@
 
                 <TextView
                     android:id="@+id/hero_title"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:textAppearance="?textAppearanceTitleLarge"
                     android:textStyle="bold"
                     tools:text="Shizuku" />
@@ -65,7 +64,7 @@
                     android:paddingVertical="6dp"
                     android:textAppearance="?textAppearanceLabelLarge"
                     android:textStyle="bold"
-                    tools:text="未激活" />
+                    tools:text="Active" />
             </LinearLayout>
 
             <TextView
@@ -83,11 +82,11 @@
                 android:layout_marginTop="4dp"
                 android:alpha="0.78"
                 android:textAppearance="?textAppearanceBodySmall"
-                tools:text="点下方按钮启动" />
+                tools:text="用下方无线调试启动" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Three-stage strip: inactive / activating / ready -->
+    <!-- Two-stage strip: inactive / ready -->
     <LinearLayout
         android:id="@+id/stage_row"
         android:layout_width="match_parent"
@@ -142,56 +141,32 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="@string/home_hero_stage_activating"
-                android:textAppearance="?textAppearanceLabelSmall" />
-        </LinearLayout>
-
-        <View
-            android:id="@+id/stage_line_2"
-            android:layout_width="0dp"
-            android:layout_height="2dp"
-            android:layout_marginHorizontal="4dp"
-            android:layout_weight="1"
-            android:background="#55000000" />
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
-            android:orientation="vertical">
-
-            <View
-                android:id="@+id/stage_dot_3"
-                android:layout_width="10dp"
-                android:layout_height="10dp"
-                android:background="@drawable/bg_stage_dot" />
-
-            <TextView
-                android:id="@+id/stage_label_3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
                 android:text="@string/home_hero_stage_ready"
                 android:textAppearance="?textAppearanceLabelSmall" />
         </LinearLayout>
     </LinearLayout>
 
+    <!-- Kept for ViewBinding compatibility; hidden — wireless tile below is the start CTA. -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/hero_action"
         style="@style/Widget.Material3.Button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="18dp"
+        android:visibility="gone"
         android:text="@string/home_hero_action_activate"
-        tools:ignore="TouchTargetSizeCheck" />
+        tools:ignore="TouchTargetSizeCheck"
+        tools:visibility="gone" />
 
     <TextView
         android:id="@+id/hero_action_sub"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
+        android:visibility="gone"
         android:alpha="0.72"
         android:text="@string/home_hero_action_activate_sub"
-        android:textAppearance="?textAppearanceBodySmall" />
+        android:textAppearance="?textAppearanceBodySmall"
+        tools:visibility="gone" />
 
 </LinearLayout>
