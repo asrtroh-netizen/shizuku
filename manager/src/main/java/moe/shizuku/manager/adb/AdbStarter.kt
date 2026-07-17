@@ -65,6 +65,8 @@ object AdbStarter {
                     client.runCommand("shell:${Starter.internalCommand}")
                 }
             }
+            // First successful wireless start ⇒ keep auto-connect for next Wi‑Fi.
+            EnvironmentUtils.enableAutostartAfterPair(context)
         } catch (e: Throwable) {
             // Leave STARTING only when binder is expected next (waitForBinder). Failures must clear.
             if (ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING) {

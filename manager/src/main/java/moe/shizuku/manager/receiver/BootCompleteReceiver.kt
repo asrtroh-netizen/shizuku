@@ -38,7 +38,10 @@ class BootCompleteReceiver : BroadcastReceiver() {
                 }
             }
             WifiManager.NETWORK_STATE_CHANGED_ACTION -> {
-                if (!ShizukuSettings.getStartOnBoot(context)) return
+                // Once paired (or start-on-boot on): any connected Wi‑Fi → auto-connect.
+                if (!ShizukuSettings.getStartOnBoot(context) &&
+                    !EnvironmentUtils.canWirelessAutostart(context)
+                ) return
                 if (ShizukuStateMachine.isRunning()) return
                 @Suppress("DEPRECATION")
                 val info = if (Build.VERSION.SDK_INT >= 33) {
@@ -51,8 +54,7 @@ class BootCompleteReceiver : BroadcastReceiver() {
                     !EnvironmentUtils.isWifiClientConnected(context)
                 ) return
 
-                Log.i(AppConstants.TAG, "wifi connected → retry AdbStartWorker")
-                // No BOOT FGS allowlist here — WorkManager is the safe path.
+                Log.i(AppConstants.TAG, "wifi connected → auto-connect AdbStartWorker")
                 AdbStartWorker.enqueue(context)
             }
         }

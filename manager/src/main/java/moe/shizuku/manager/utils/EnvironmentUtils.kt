@@ -1,5 +1,6 @@
 package moe.shizuku.manager.utils
 
+import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.app.UiModeManager
 import android.content.Context
 import android.content.pm.PackageManager
@@ -10,6 +11,7 @@ import android.os.Build
 import android.os.SystemProperties
 import moe.shizuku.manager.ShizukuApplication
 import moe.shizuku.manager.ShizukuSettings
+import moe.shizuku.manager.adb.PreferenceAdbKeyStore
 import com.topjohnwu.superuser.Shell
 
 private val appContext = ShizukuApplication.appContext
@@ -37,6 +39,31 @@ object EnvironmentUtils {
 
     fun isWifiRequired(): Boolean {
         return (getAdbTcpPort() <= 0 || !ShizukuSettings.getTcpMode())
+    }
+
+    /**
+     * Paired once (ADB key stored) + WRITE_SECURE_SETTINGS → wireless path can autostart.
+     * User rule: once paired, anything that can connect should auto-connect.
+     */
+    @JvmStatic
+    fun canWirelessAutostart(context: Context = appContext): Boolean {
+        if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) {
+            return false
+        }
+        return PreferenceAdbKeyStore(ShizukuSettings.getPreferences()).get() != null
+    }
+
+    /**
+     * Enable boot/Wi‑Fi autostart after a successful pair (idempotent).
+     */
+    @JvmStatic
+    fun enableAutostartAfterPair(context: Context = appContext) {
+        if (!canWirelessAutostart(context)) return
+        if (!ShizukuSettings.getStartOnBoot(context)) {
+            ShizukuSettings.setStartOnBoot(context, true)
+        } else {
+            moe.shizuku.manager.receiver.WifiReadyMonitor.ensureRegistered(context)
+        }
     }
 
     /**

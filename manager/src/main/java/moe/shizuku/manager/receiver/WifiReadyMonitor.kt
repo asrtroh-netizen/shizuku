@@ -12,11 +12,10 @@ import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
 
 /**
- * Process-local Wi‑Fi STA callback: when start-on-boot is on and Shizuku is not running,
- * retry start once Wi‑Fi client connects (survives late Wi‑Fi after BOOT_COMPLETED).
+ * Process-local Wi‑Fi STA callback: once paired (key + WSS), retry start when Wi‑Fi is up.
  */
 object WifiReadyMonitor {
-    private const val DEBOUNCE_MS = 3_000L
+    private const val DEBOUNCE_MS = 1_000L
 
     @Volatile
     private var registered = false
@@ -29,7 +28,10 @@ object WifiReadyMonitor {
     @Synchronized
     fun ensureRegistered(context: Context) {
         if (registered) return
-        if (!ShizukuSettings.getStartOnBoot(context)) return
+        // Prefer start-on-boot; also register when already paired so late Wi‑Fi still reconnects.
+        if (!ShizukuSettings.getStartOnBoot(context) && !EnvironmentUtils.canWirelessAutostart(context)) {
+            return
+        }
 
         val app = context.applicationContext
         val cm = app.getSystemService(ConnectivityManager::class.java) ?: return
@@ -42,9 +44,7 @@ object WifiReadyMonitor {
             }
 
             override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-                if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-                    && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                ) {
+                if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                     maybeRetry(app)
                 }
             }
@@ -54,6 +54,7 @@ object WifiReadyMonitor {
             callback = cb
             registered = true
             Log.i(AppConstants.TAG, "WifiReadyMonitor registered")
+            maybeRetry(app)
         } catch (e: Exception) {
             Log.w(AppConstants.TAG, "WifiReadyMonitor register failed", e)
         }
@@ -72,7 +73,7 @@ object WifiReadyMonitor {
     }
 
     private fun maybeRetry(context: Context) {
-        if (!ShizukuSettings.getStartOnBoot(context)) return
+        if (!EnvironmentUtils.canWirelessAutostart(context) && !ShizukuSettings.getStartOnBoot(context)) return
         if (ShizukuStateMachine.isRunning()) return
         if (EnvironmentUtils.isWifiRequired() && !EnvironmentUtils.isWifiClientConnected(context)) return
 
@@ -80,7 +81,7 @@ object WifiReadyMonitor {
         if (now - lastEnqueueAtMs < DEBOUNCE_MS) return
         lastEnqueueAtMs = now
 
-        Log.i(AppConstants.TAG, "WifiReadyMonitor: Wi‑Fi up, retry start")
+        Log.i(AppConstants.TAG, "WifiReadyMonitor: Wi‑Fi up, auto-connect")
         ShizukuReceiverStarter.start(context)
     }
 }

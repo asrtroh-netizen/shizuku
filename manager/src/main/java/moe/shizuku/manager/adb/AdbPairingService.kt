@@ -42,6 +42,13 @@ class AdbPairingService : Service() {
         private const val portKey = "paring_code"
         private const val hostKey = "pairing_host"
 
+        @Volatile
+        private var autoPairCode: String? = null
+
+        fun setAutoPairCode(code: String) {
+            autoPairCode = code
+        }
+
         fun startIntent(context: Context): Intent {
             return Intent(context, AdbPairingService::class.java).setAction(startAction)
         }
@@ -61,6 +68,14 @@ class AdbPairingService : Service() {
     private val observer = Observer<Pair<String, Int>> { (host, port) ->
         Log.i(tag, "Pairing service host: $host, port: $port")
         if (port <= 0) return@Observer
+
+        val code = autoPairCode
+        if (code != null) {
+            Log.i(tag, "Using auto-detected pairing code")
+            autoPairCode = null
+            onInput(code, host, port)
+            return@Observer
+        }
 
         // Since the service could be killed before user finishing input,
         // we need to put the host and port into Intent
@@ -179,7 +194,7 @@ class AdbPairingService : Service() {
         stopForeground(STOP_FOREGROUND_DETACH)
 
         val title: String
-        val text: String?
+        var text: String?
 
         if (success) {
             Log.i(tag, "Pair succeed")
@@ -188,6 +203,22 @@ class AdbPairingService : Service() {
             text = getString(R.string.notification_adb_pairing_succeed_text)
 
             stopSearch()
+
+            // Once paired: enable autostart, then start — no extra tap.
+            if (checkSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                try {
+                    moe.shizuku.manager.utils.EnvironmentUtils.enableAutostartAfterPair(applicationContext)
+                    moe.shizuku.manager.receiver.ShizukuReceiverStarter.start(
+                        applicationContext,
+                        forceStart = false,
+                    )
+                    text = getString(R.string.notification_adb_pairing_succeed_starting)
+                } catch (e: Throwable) {
+                    Log.w(tag, "Auto-start after pairing failed", e)
+                }
+            }
         } else {
             title = getString(R.string.notification_adb_pairing_failed_title)
 
