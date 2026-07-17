@@ -5,18 +5,23 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
-import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.database.ContentObserver
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
-import androidx.lifecycle.asFlow
-import androidx.work.*
+import androidx.work.BackoffPolicy
+import androidx.work.CoroutineWorker
+import androidx.work.ExistingWorkPolicy
+import androidx.work.ForegroundInfo
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
 import java.io.EOFException
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +32,6 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.adb.AdbMdns
@@ -47,6 +51,20 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 applicationContext,
                 WorkerState.RUNNING
             )
+
+            // OneKuku boot path: wait for remembered Wi‑Fi STA before mDNS / wireless ADB.
+            if (EnvironmentUtils.isWifiRequired()) {
+                updateNotification(applicationContext, WorkerState.AWAITING_WIFI)
+                val wifiOk = withContext(Dispatchers.IO) {
+                    EnvironmentUtils.waitForWifiClient(applicationContext, BOOT_WIFI_WAIT_MS)
+                }
+                if (!wifiOk) {
+                    updateNotification(applicationContext, WorkerState.AWAITING_WIFI)
+                    // Keep WorkManager retrying; WifiReadyReceiver also nudges when STA joins.
+                    return Result.retry()
+                }
+                updateNotification(applicationContext, WorkerState.RUNNING)
+            }
 
             val cr = applicationContext.contentResolver
 
@@ -71,7 +89,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     adbMdns.start()
                     timeoutJob?.cancel()
                     timeoutJob = launch {
-                        delay(15_000)
+                        delay(MDNS_DISCOVERY_TIMEOUT_MS)
                         close(TimeoutException("Timed out during mDNS port discovery"))
                     }
                 }
@@ -202,19 +220,15 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
     }
 
     companion object {
-        fun enqueue(context: Context) {
-            val cb = Constraints.Builder()
-            // Align with OneKuku boot path: if a paired Wi‑Fi is already up after reboot,
-            // start immediately. Only wait on UNMETERED when Wi‑Fi is still absent.
-            val needWifi = EnvironmentUtils.isWifiRequired()
-            val wifiUp = EnvironmentUtils.isWifiClientConnected(context)
-            if (needWifi && !wifiUp) {
-                cb.setRequiredNetworkType(NetworkType.UNMETERED)
-            }
-            val constraints = cb.build()
+        /** Match OneKukuBootRestoreCoordinator.BOOT_WIFI_WAIT_MS (+ margin for OEM slow join). */
+        private const val BOOT_WIFI_WAIT_MS = 45_000L
+        private const val MDNS_DISCOVERY_TIMEOUT_MS = 30_000L
 
+        fun enqueue(context: Context) {
+            // Do NOT gate on WorkManager UNMETERED: some OEMs stall forever when the
+            // constraint is already met / flaky. Wait for Wi‑Fi inside doWork instead.
             val request = OneTimeWorkRequestBuilder<AdbStartWorker>()
-                .setConstraints(constraints)
+                .setBackoffCriteria(BackoffPolicy.LINEAR, 15_000L, TimeUnit.MILLISECONDS)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(

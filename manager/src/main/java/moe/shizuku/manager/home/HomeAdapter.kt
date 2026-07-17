@@ -45,8 +45,15 @@ class HomeAdapter(private val homeModel: HomeViewModel, private val appsModel: A
         clear()
         addItem(ServerStatusViewHolder.CREATOR, status, ID_STATUS)
 
+        // Always show apps card: when service is down binder is empty — explain instead of hiding.
+        val appsCount = when {
+            !running -> -1
+            appsModel.grantedCount.value?.status == rikka.lifecycle.Status.ERROR -> -2
+            else -> grantedCount
+        }
+        addItem(ManageAppsViewHolder.CREATOR, status to appsCount, ID_APPS)
+
         if (adbPermission) {
-            addItem(ManageAppsViewHolder.CREATOR, status to grantedCount, ID_APPS)
             addItem(TerminalViewHolder.CREATOR, status, ID_TERMINAL)
         }
 

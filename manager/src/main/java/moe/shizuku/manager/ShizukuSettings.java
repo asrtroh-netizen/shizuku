@@ -147,6 +147,13 @@ public class ShizukuSettings {
             PackageManager.DONT_KILL_APP
         );
         getPreferences().edit().putBoolean(Keys.KEY_START_ON_BOOT, enable).apply();
+        // Hardening: when autostart is on, keep watchdog so the service is restarted if killed.
+        if (enable) {
+            setWatchdog(context, true);
+            moe.shizuku.manager.receiver.WifiReadyMonitor.INSTANCE.ensureRegistered(context);
+        } else {
+            moe.shizuku.manager.receiver.WifiReadyMonitor.INSTANCE.unregister(context);
+        }
     }
     
     public static boolean getWatchdog() {

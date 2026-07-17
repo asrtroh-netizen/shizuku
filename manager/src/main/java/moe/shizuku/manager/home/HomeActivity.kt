@@ -97,7 +97,7 @@ abstract class HomeActivity : AppBarActivity() {
         homeModel.checkBatteryOptimization()
 
         appsModel.grantedCount.observe(this) {
-            if (it.status == Status.SUCCESS) {
+            if (it.status == Status.SUCCESS || it.status == Status.ERROR) {
                 adapter.updateData()
             }
         }

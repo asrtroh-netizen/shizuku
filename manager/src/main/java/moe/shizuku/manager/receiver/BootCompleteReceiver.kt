@@ -11,7 +11,9 @@ class BootCompleteReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
 
+        // Late Wi‑Fi after boot: keep a process callback so we can retry autostart.
+        WifiReadyMonitor.ensureRegistered(context)
         ShizukuReceiverStarter.start(context)
-        if(ShizukuSettings.getWatchdog()) WatchdogService.start(context)
+        if (ShizukuSettings.getWatchdog()) WatchdogService.start(context)
     }
 }

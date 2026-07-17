@@ -6,6 +6,17 @@
     <string name="home_status_service_not_running">%1$s未运行</string>
     <string name="home_status_service_version">版本 %2$s，%1$s</string>
     <string name="home_status_service_version_update"><![CDATA[版本 %2$s，%1$s<br>再次启动来升级到版本 %3$s]]></string>
+    <string name="home_status_tap_detail">点按查看状态详情</string>
+    <string name="home_status_detail_title">服务状态</string>
+    <string name="home_status_chip_mode">模式 · %1$s</string>
+    <string name="home_status_chip_version">版本 · %1$s</string>
+    <string name="home_status_chip_uid">UID · %1$s</string>
+    <string name="home_status_chip_wifi">Wi‑Fi · %1$s</string>
+    <string name="home_status_wifi_on">已连接</string>
+    <string name="home_status_wifi_off">未连接</string>
+    <string name="home_status_detail_body">状态：%1$s\n模式：%2$s\n版本：%3$s\nUID：%4$s\nWi‑Fi STA：%5$s\nADB 权限：%6$s\nTCP 模式：%7$s\n开机自启：%8$s</string>
+    <string name="home_app_management_waiting_service">请先启动 Shizuku——服务未运行时授权列表会是空的。</string>
+    <string name="home_app_management_binder_unavailable">读不到授权应用（服务 binder 不可用）。请先启动/重启 Shizuku 再打开。</string>
     <!-- Home - Adb -->
     <string name="home_adb_title"><![CDATA[通过连接电脑启动（使用 adb）]]></string>
     <string name="home_adb_description"><![CDATA[对于没有 root 的设备需要借助 adb 来启动 Shizuku（需要连接电脑）。这个过程每次设备重新启动后需要重新进行。请<b><a href=\"%1$s\">阅读帮助</a></b>。]]></string>

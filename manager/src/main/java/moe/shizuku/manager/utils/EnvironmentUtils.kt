@@ -53,6 +53,25 @@ object EnvironmentUtils {
         return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }
 
+    /**
+     * OneKuku-aligned: actively wait for remembered Wi‑Fi STA after reboot
+     * instead of only relying on WorkManager network constraints.
+     */
+    @JvmStatic
+    fun waitForWifiClient(context: Context = appContext, timeoutMs: Long): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            if (isWifiClientConnected(context)) return true
+            try {
+                Thread.sleep(1_500L)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                break
+            }
+        }
+        return isWifiClientConnected(context)
+    }
+
     fun isRooted(): Boolean {
         return Shell.getShell().isRoot
     }

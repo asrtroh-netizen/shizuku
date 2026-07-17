@@ -43,7 +43,10 @@ class ShizukuApplication : Application() {
         LocaleDelegate.defaultLocale = ShizukuSettings.getLocale()
         AppCompatDelegate.setDefaultNightMode(ShizukuSettings.getNightMode())
 
-        if(ShizukuSettings.getWatchdog()) WatchdogService.start(context)
+        if (ShizukuSettings.getWatchdog()) WatchdogService.start(context)
+        if (ShizukuSettings.getStartOnBoot(context)) {
+            moe.shizuku.manager.receiver.WifiReadyMonitor.ensureRegistered(context)
+        }
     }
 
     override fun onCreate() {

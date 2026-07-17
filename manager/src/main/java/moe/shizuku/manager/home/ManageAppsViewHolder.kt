@@ -36,25 +36,31 @@ class ManageAppsViewHolder(private val binding: HomeManageAppsItemBinding, root:
 
     override fun onBind() {
         val context = itemView.context
-        if (!data.first.isRunning) {
-            itemView.isEnabled = false
-            title.setText(R.string.home_app_management_title)
-            summary.text = context.getString(
-                R.string.home_status_service_not_running,
-                context.getString(R.string.app_name)
-            )
-        } else {
-            itemView.isEnabled = true
-            title.text = context.resources.getQuantityString(
-                R.plurals.home_app_management_authorized_apps_count,
-                data.second,
-                data.second
-            )
-            summary.text = context.getString(R.string.home_app_management_view_authorized_apps)
+        when {
+            !data.first.isRunning || data.second == -1 -> {
+                itemView.isEnabled = false
+                title.setText(R.string.home_app_management_title)
+                summary.text = context.getString(R.string.home_app_management_waiting_service)
+            }
+            data.second == -2 -> {
+                itemView.isEnabled = false
+                title.setText(R.string.home_app_management_title)
+                summary.text = context.getString(R.string.home_app_management_binder_unavailable)
+            }
+            else -> {
+                itemView.isEnabled = true
+                title.text = context.resources.getQuantityString(
+                    R.plurals.home_app_management_authorized_apps_count,
+                    data.second,
+                    data.second
+                )
+                summary.text = context.getString(R.string.home_app_management_view_authorized_apps)
+            }
         }
     }
 
     override fun onClick(v: View) {
+        if (!data.first.isRunning || data.second < 0) return
         v.context.startActivity(Intent(v.context, ApplicationManagementActivity::class.java))
     }
 }

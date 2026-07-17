@@ -9,6 +9,17 @@
     <string name="home_status_service_not_running">%1$s is not running</string>
     <string name="home_status_service_version">Version %2$s, %1$s</string>
     <string name="home_status_service_version_update"><![CDATA[Version %2$s, %1$s<br>Start again to update to version %3$s]]></string>
+    <string name="home_status_tap_detail">Tap for status details</string>
+    <string name="home_status_detail_title">Service status</string>
+    <string name="home_status_chip_mode">Mode · %1$s</string>
+    <string name="home_status_chip_version">Ver · %1$s</string>
+    <string name="home_status_chip_uid">UID · %1$s</string>
+    <string name="home_status_chip_wifi">Wi‑Fi · %1$s</string>
+    <string name="home_status_wifi_on">on</string>
+    <string name="home_status_wifi_off">off</string>
+    <string name="home_status_detail_body">State: %1$s\nMode: %2$s\nVersion: %3$s\nUID: %4$s\nWi‑Fi STA: %5$s\nADB permission: %6$s\nTCP mode: %7$s\nStart on boot: %8$s</string>
+    <string name="home_app_management_waiting_service">Start Shizuku first — the authorized apps list is empty until the service is running.</string>
+    <string name="home_app_management_binder_unavailable">Cannot read authorized apps (service binder unavailable). Start or restart Shizuku, then open again.</string>
 
     <!-- Home - Adb -->
     <string name="home_adb_title"><![CDATA[Start by connecting to a computer]]></string>
