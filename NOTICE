@@ -1,4 +1,4 @@
-OneIms Lite
+Shizuku (asrtroh-netizen fork)
 Copyright (c) 2026 asrtroh-netizen and contributors
 
 This product is a modified distribution of Shizuku forks and includes code from:
@@ -8,7 +8,7 @@ This product is a modified distribution of Shizuku forks and includes code from:
    Copyright (c) RikkaW and contributors
    Licensed under the Apache License, Version 2.0
 
-2) thedjchi / Shizuku (feature fork: boot-on-Wi-Fi, TCP mode, watchdog, etc.)
+2) thedjchi / Shizuku (feature fork)
    https://github.com/thedjchi/Shizuku
    Copyright (c) thedjchi and contributors
    Licensed under the Apache License, Version 2.0
@@ -17,6 +17,5 @@ This product is a modified distribution of Shizuku forks and includes code from:
    https://github.com/thedjchi/Shizuku-API (and upstream RikkaApps/Shizuku-API)
    Licensed under the MIT License (see api/LICENSE)
 
-This distribution retains the Apache License 2.0 text in LICENSE.
-Modifications by OneIms Lite are also provided under Apache License 2.0
-unless a specific file states otherwise.
+This repository is separate from OneIms (IMS helper).
+Apache License 2.0 text is retained in LICENSE.
