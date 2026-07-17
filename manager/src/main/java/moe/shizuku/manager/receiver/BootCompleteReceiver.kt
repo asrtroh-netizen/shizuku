@@ -13,12 +13,11 @@ import moe.shizuku.manager.service.BootAdbStartService
 import moe.shizuku.manager.service.WatchdogService
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
-import moe.shizuku.manager.worker.AdbStartWorker
 
 /**
  * OneKuku-aligned boot / Wi‑Fi triggers.
- * - BOOT_COMPLETED: FGS allowlist → [BootAdbStartService]
- * - NETWORK_STATE_CHANGED: late Wi‑Fi → WorkManager nudge (no FGS allowlist on this action)
+ * - BOOT_COMPLETED: FGS allowlist → [BootAdbStartService] (activation in-process)
+ * - NETWORK_STATE_CHANGED: late Wi‑Fi → same FGS path (fallback WorkManager if FGS blocked)
  */
 class BootCompleteReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
@@ -38,7 +37,6 @@ class BootCompleteReceiver : BroadcastReceiver() {
                 }
             }
             WifiManager.NETWORK_STATE_CHANGED_ACTION -> {
-                // Once paired (or start-on-boot on): any connected Wi‑Fi → auto-connect.
                 if (!ShizukuSettings.getStartOnBoot(context) &&
                     !EnvironmentUtils.canWirelessAutostart(context)
                 ) return
@@ -54,8 +52,9 @@ class BootCompleteReceiver : BroadcastReceiver() {
                     !EnvironmentUtils.isWifiClientConnected(context)
                 ) return
 
-                Log.i(AppConstants.TAG, "wifi connected → auto-connect AdbStartWorker")
-                AdbStartWorker.enqueue(context)
+                Log.i(AppConstants.TAG, "wifi connected → BootAdbStartService (in-FGS)")
+                // Prefer FGS path (same as boot), not bare WorkManager.
+                BootAdbStartService.enqueue(context, debounceMs = 500L)
             }
         }
     }

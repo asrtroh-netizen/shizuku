@@ -23,15 +23,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.R
+import moe.shizuku.manager.adb.WirelessAdbActivation
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import moe.shizuku.manager.worker.AdbStartWorker
 
 /**
- * OneKuku-aligned boot starter: BootReceiver must raise a short FGS (Android 12+
- * blocks plain startService from BOOT_COMPLETED). Orchestrates unlock → Wi‑Fi wait
- * (wireless only) → ensure adb_wifi → enqueue [AdbStartWorker]. TCP mode skips Wi‑Fi wait.
+ * OneKuku-aligned boot starter: complete wireless activation **inside this FGS**.
+ * Do not only enqueue WorkManager — OEM battery policy freezes WM after the boot allowlist ends.
  */
 class BootAdbStartService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -108,10 +108,12 @@ class BootAdbStartService : Service() {
         }
         if (!waitUntilUnlocked()) {
             Log.i(AppConstants.TAG, "BootAdbStartService: user not unlocked yet")
+            // Still arm late Wi‑Fi path.
+            AdbStartWorker.enqueue(this, replaceStuck = true)
             return
         }
 
-        // TCP / adb tcp.port path: no Wi‑Fi gate (preserves TcpIp mode).
+        var waitedWifi = false
         if (EnvironmentUtils.isWifiRequired()) {
             ShizukuReceiverStarter.updateNotification(this, ShizukuReceiverStarter.WorkerState.AWAITING_WIFI)
             val wifiOk = withContext(Dispatchers.IO) {
@@ -120,13 +122,30 @@ class BootAdbStartService : Service() {
             if (!wifiOk) {
                 Log.i(AppConstants.TAG, "BootAdbStartService: waiting Wi‑Fi, will retry on NETWORK_STATE")
                 ShizukuReceiverStarter.updateNotification(this, ShizukuReceiverStarter.WorkerState.AWAITING_WIFI)
+                AdbStartWorker.enqueue(this, replaceStuck = true)
                 return
             }
+            waitedWifi = true
             ensureAdbWifiWithSettle()
         }
 
-        Log.i(AppConstants.TAG, "BootAdbStartService: start via ShizukuReceiverStarter")
-        ShizukuReceiverStarter.start(this)
+        Log.i(AppConstants.TAG, "BootAdbStartService: activate in FGS")
+        ShizukuReceiverStarter.updateNotification(this, ShizukuReceiverStarter.WorkerState.RUNNING)
+        val ok = runCatching {
+            WirelessAdbActivation.activate(this, alreadyWaitedWifi = waitedWifi)
+        }.onFailure {
+            Log.w(AppConstants.TAG, "BootAdbStartService: in-FGS activate failed", it)
+        }.getOrDefault(false)
+
+        if (ok) {
+            val nm = getSystemService(NotificationManager::class.java)
+            nm?.cancel(ShizukuReceiverStarter.NOTIFICATION_ID)
+            Log.i(AppConstants.TAG, "BootAdbStartService: binder ready")
+            return
+        }
+
+        Log.w(AppConstants.TAG, "BootAdbStartService: fallback WorkManager")
+        AdbStartWorker.enqueue(this, replaceStuck = true)
     }
 
     private suspend fun waitUntilUnlocked(): Boolean {
@@ -147,7 +166,6 @@ class BootAdbStartService : Service() {
             Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
         }
         if (!wasOn) {
-            // OneKuku: TLS port lags Secure Settings write.
             delay(POST_WIRELESS_ENABLE_MS)
         }
     }
@@ -156,7 +174,6 @@ class BootAdbStartService : Service() {
         private const val CHANNEL = "shizuku_boot_adb_fg"
         private const val NOTIF_ID = 1450
         const val EXTRA_DEBOUNCE_MS = "debounce_ms"
-        /** Match OneKukuBootRestoreCoordinator.BOOT_WIFI_WAIT_MS */
         private const val BOOT_WIFI_WAIT_MS = 20_000L
         private const val POST_WIRELESS_ENABLE_MS = 2_400L
         private const val UNLOCK_WAIT_MS = 90_000L
@@ -173,7 +190,7 @@ class BootAdbStartService : Service() {
                 }
             }.onFailure {
                 Log.w(AppConstants.TAG, "BootAdbStartService enqueue failed, fallback WorkManager", it)
-                AdbStartWorker.enqueue(context)
+                AdbStartWorker.enqueue(context, replaceStuck = true)
             }
         }
     }

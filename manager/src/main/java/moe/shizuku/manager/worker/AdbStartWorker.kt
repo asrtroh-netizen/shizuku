@@ -1,21 +1,15 @@
 package moe.shizuku.manager.worker
 
-import android.app.KeyguardManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.database.ContentObserver
 import android.os.Build
-import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.work.BackoffPolicy
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
-import androidx.work.ForegroundInfo
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
@@ -24,144 +18,29 @@ import java.io.EOFException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
-import moe.shizuku.manager.ShizukuSettings
-import moe.shizuku.manager.adb.AdbMdns
-import moe.shizuku.manager.adb.AdbStarter
+import moe.shizuku.manager.adb.WirelessAdbActivation
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter.WorkerState
 import moe.shizuku.manager.receiver.ShizukuReceiverStarter.updateNotification
 import moe.shizuku.manager.settings.BugReportDialogActivity
-import moe.shizuku.manager.starter.Starter
-import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
 
+/**
+ * WorkManager fallback when boot FGS cannot finish activation.
+ * Prefer [moe.shizuku.manager.service.BootAdbStartService] in-process path.
+ */
 class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         try {
-            updateNotification(
-                applicationContext,
-                WorkerState.RUNNING
-            )
-
-            // OneKuku boot path: wait for remembered Wi‑Fi STA before mDNS / wireless ADB.
-            // TCP mode (isWifiRequired=false) skips this entirely — TcpIp preserved.
-            if (EnvironmentUtils.isWifiRequired()) {
-                // Already on old Wi‑Fi → skip the long wait (BootAdbStartService may have waited).
-                if (!EnvironmentUtils.isWifiClientConnected(applicationContext)) {
-                    updateNotification(applicationContext, WorkerState.AWAITING_WIFI)
-                    val wifiOk = withContext(Dispatchers.IO) {
-                        EnvironmentUtils.waitForWifiClient(applicationContext, BOOT_WIFI_WAIT_MS)
-                    }
-                    if (!wifiOk) {
-                        updateNotification(applicationContext, WorkerState.AWAITING_WIFI)
-                        return Result.retry()
-                    }
-                }
-                updateNotification(applicationContext, WorkerState.RUNNING)
-
-                val crWifi = applicationContext.contentResolver
-                val wifiWasOn = Settings.Global.getInt(crWifi, "adb_wifi_enabled", 0) == 1
-                Settings.Global.putInt(crWifi, "adb_wifi_enabled", 1)
-                if (!wifiWasOn) {
-                    delay(POST_WIRELESS_ENABLE_MS)
-                }
+            updateNotification(applicationContext, WorkerState.RUNNING)
+            val ok = WirelessAdbActivation.activate(applicationContext, alreadyWaitedWifi = false)
+            if (!ok) {
+                updateNotification(applicationContext, WorkerState.AWAITING_WIFI)
+                return Result.retry()
             }
-
-            val cr = applicationContext.contentResolver
-
-            Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
-            Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
-
-            val tcpPort = EnvironmentUtils.getAdbTcpPort()
-            if (tcpPort > 0 && !ShizukuSettings.getTcpMode()) {
-                AdbStarter.stopTcp(applicationContext, tcpPort)
-            }
-
-            val port = tcpPort.takeIf { !EnvironmentUtils.isWifiRequired() } ?: callbackFlow {
-                val adbMdns = AdbMdns(applicationContext, AdbMdns.TLS_CONNECT) { p ->
-                    if (p.second > 0) trySend(p.second)
-                }
-
-                var awaitingAuth = false
-                var timeoutJob: Job? = null
-                var unlockReceiver: BroadcastReceiver? = null
-
-                fun startDiscoveryWithTimeout() {
-                    adbMdns.start()
-                    timeoutJob?.cancel()
-                    timeoutJob = launch {
-                        delay(MDNS_DISCOVERY_TIMEOUT_MS)
-                        close(TimeoutException("Timed out during mDNS port discovery"))
-                    }
-                }
-
-                fun handleAuth() {
-                    val km = applicationContext.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-                    if (km.isKeyguardLocked) {
-                        val notification = ShizukuReceiverStarter.buildNotification(
-                            applicationContext,
-                            null
-                        )
-                        val foregroundInfo = ForegroundInfo(
-                            ShizukuReceiverStarter.NOTIFICATION_ID,
-                            notification
-                        )
-                        setForegroundAsync(foregroundInfo)
-
-                        val filter = IntentFilter(Intent.ACTION_USER_PRESENT)
-                        unlockReceiver = object : BroadcastReceiver() {
-                            override fun onReceive(context: Context, intent: Intent) {
-                                if (intent.action == Intent.ACTION_USER_PRESENT) {
-                                    context.unregisterReceiver(this)
-                                    unlockReceiver = null
-                                    Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
-                                }
-                            }
-                        }
-                        applicationContext.registerReceiver(unlockReceiver, filter)
-                    } else awaitingAuth = true
-                    timeoutJob?.cancel()
-                    adbMdns.stop()
-                }
-
-                val observer = object : ContentObserver(null) {
-                    override fun onChange(selfChange: Boolean) {
-                        when (Settings.Global.getInt(cr, "adb_wifi_enabled", 0)) {
-                            0 -> if (awaitingAuth) {
-                                close(SecurityException("Network is not authorized for wireless debugging"))
-                            } else handleAuth()
-                            1 -> startDiscoveryWithTimeout()
-                        }
-                    }
-                }
-
-                Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
-                cr.registerContentObserver(Settings.Global.getUriFor("adb_wifi_enabled"), false, observer)
-                startDiscoveryWithTimeout()
-
-                awaitClose {
-                    adbMdns.stop()
-                    timeoutJob?.cancel()
-                    cr.unregisterContentObserver(observer)
-                    unlockReceiver?.let { applicationContext.unregisterReceiver(it) }
-                }
-            }.first()
-            
-            AdbStarter.startAdb(applicationContext, port)
-            Starter.waitForBinder()
-
             val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             nm.cancel(ShizukuReceiverStarter.NOTIFICATION_ID)
-
             return Result.success()
         } catch (e: CancellationException) {
             val state = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
@@ -174,7 +53,6 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 }
             }
             updateNotification(applicationContext, state)
-            // Cancelled workers used to leave STARTING stuck → permanent「激活中」.
             if (ShizukuStateMachine.get() != ShizukuStateMachine.State.RUNNING) {
                 ShizukuStateMachine.update()
             }
@@ -190,10 +68,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             if (ShizukuStateMachine.update() == ShizukuStateMachine.State.RUNNING) {
                 return Result.success()
             } else {
-                updateNotification(
-                    applicationContext,
-                    WorkerState.AWAITING_RETRY
-                )
+                updateNotification(applicationContext, WorkerState.AWAITING_RETRY)
                 return Result.retry()
             }
         }
@@ -209,7 +84,6 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
         nm.createNotificationChannel(channel)
 
         val nb = NotificationCompat.Builder(context, CHANNEL_ID)
-
         val msgNotif = "$e. ${context.getString(R.string.wadb_error_notify_dev)}"
 
         val intent = Intent(context, BugReportDialogActivity::class.java).apply {
@@ -233,22 +107,16 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
     }
 
     companion object {
-        /** Match OneKukuBootRestoreCoordinator.BOOT_WIFI_WAIT_MS (+ margin). */
-        private const val BOOT_WIFI_WAIT_MS = 20_000L
-        private const val POST_WIRELESS_ENABLE_MS = 2_400L
-        private const val MDNS_DISCOVERY_TIMEOUT_MS = 30_000L
-
-        fun enqueue(context: Context) {
-            // Do NOT gate on WorkManager UNMETERED: some OEMs stall forever when the
-            // constraint is already met / flaky. Wait for Wi‑Fi inside doWork instead.
+        fun enqueue(context: Context, replaceStuck: Boolean = false) {
             val request = OneTimeWorkRequestBuilder<AdbStartWorker>()
                 .setBackoffCriteria(BackoffPolicy.LINEAR, 15_000L, TimeUnit.MILLISECONDS)
                 .build()
 
-            // KEEP: do not cancel an in-flight start (REPLACE caused re-wait + "tap again, wait forever").
+            // KEEP for live in-flight; REPLACE when boot/Wi‑Fi retry must punch through a stuck job.
+            val policy = if (replaceStuck) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
             WorkManager.getInstance(context).enqueueUniqueWork(
                 "adb_start_worker",
-                ExistingWorkPolicy.KEEP,
+                policy,
                 request
             )
         }
