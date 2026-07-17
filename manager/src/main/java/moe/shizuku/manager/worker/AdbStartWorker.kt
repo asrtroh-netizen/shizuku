@@ -53,6 +53,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             )
 
             // OneKuku boot path: wait for remembered Wi‑Fi STA before mDNS / wireless ADB.
+            // TCP mode (isWifiRequired=false) skips this entirely — TcpIp preserved.
             if (EnvironmentUtils.isWifiRequired()) {
                 updateNotification(applicationContext, WorkerState.AWAITING_WIFI)
                 val wifiOk = withContext(Dispatchers.IO) {
@@ -60,10 +61,16 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 }
                 if (!wifiOk) {
                     updateNotification(applicationContext, WorkerState.AWAITING_WIFI)
-                    // Keep WorkManager retrying; WifiReadyReceiver also nudges when STA joins.
                     return Result.retry()
                 }
                 updateNotification(applicationContext, WorkerState.RUNNING)
+
+                val crWifi = applicationContext.contentResolver
+                val wifiWasOn = Settings.Global.getInt(crWifi, "adb_wifi_enabled", 0) == 1
+                Settings.Global.putInt(crWifi, "adb_wifi_enabled", 1)
+                if (!wifiWasOn) {
+                    delay(POST_WIRELESS_ENABLE_MS)
+                }
             }
 
             val cr = applicationContext.contentResolver
@@ -220,8 +227,9 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
     }
 
     companion object {
-        /** Match OneKukuBootRestoreCoordinator.BOOT_WIFI_WAIT_MS (+ margin for OEM slow join). */
-        private const val BOOT_WIFI_WAIT_MS = 45_000L
+        /** Match OneKukuBootRestoreCoordinator.BOOT_WIFI_WAIT_MS (+ margin). */
+        private const val BOOT_WIFI_WAIT_MS = 20_000L
+        private const val POST_WIRELESS_ENABLE_MS = 2_400L
         private const val MDNS_DISCOVERY_TIMEOUT_MS = 30_000L
 
         fun enqueue(context: Context) {

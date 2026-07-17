@@ -34,7 +34,7 @@ try {
     gitCountText = ""
 }
 def gitCommitCount = gitCountText.isInteger() ? Integer.parseInt(gitCountText) : 13700
-def baseVersionName = "13.7.1"
+def baseVersionName = "13.7.2"
 def isBeta = project.hasProperty("beta")
 ext {
     versionCode = gitCommitCount

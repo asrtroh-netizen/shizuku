@@ -191,6 +191,16 @@
         </service>
 
         <service
+            android:name=".service.BootAdbStartService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Boot autostart wireless/TCP ADB Shizuku service after unlock and Wi-Fi, mirroring OneKuku boot restore foreground path." />
+        </service>
+
+        <service
             android:name=".service.WatchdogService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
@@ -221,6 +231,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.net.wifi.STATE_CHANGE" />
             </intent-filter>
         </receiver>
 

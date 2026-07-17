@@ -221,6 +221,7 @@
     <string name="start_with_root_failed">未授予 root 权限或是该设备没有 root，因此无法启动服务。</string>
     <!-- WADB Starter -->
     <string name="wadb_notification_title">正在启动 Shizuku…</string>
+    <string name="boot_adb_starting">开机后正在启动 Shizuku…</string>
     <string name="wadb_notification_wifi_required">正在等待 Wi-Fi 连接，连接成功后才能继续</string>
     <string name="wadb_notification_retry">等待重试</string>
     <string name="wadb_error_title">在系统启动时启动出现错误</string>
