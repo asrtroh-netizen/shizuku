@@ -2,9 +2,7 @@ package moe.shizuku.manager.home
 
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.app.Dialog
-import android.content.ActivityNotFoundException
 import android.content.DialogInterface
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -14,12 +12,11 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import moe.shizuku.manager.R
 import moe.shizuku.manager.adb.AdbMdns
 import moe.shizuku.manager.databinding.AdbDialogBinding
-import moe.shizuku.manager.starter.StarterActivity
-import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsPage
 
 @RequiresApi(Build.VERSION_CODES.R)
@@ -71,11 +68,9 @@ class AdbDialogFragment : DialogFragment() {
     }
 
     private fun startAndDismiss(port: Int) {
-        val intent = Intent(context, StarterActivity::class.java).apply {
-            putExtra(StarterActivity.EXTRA_PORT, port)
-        }
-        requireContext().startActivity(intent)
-
+        val ctx = requireContext()
+        // Stay on home: start ADB in-place instead of jumping to StarterActivity.
+        StartWirelessAdbViewHolder.startAdbInPlace(ctx, lifecycleScope, port)
         dismissAllowingStateLoss()
     }
 

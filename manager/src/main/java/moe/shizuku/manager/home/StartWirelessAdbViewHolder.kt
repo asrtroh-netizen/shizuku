@@ -13,24 +13,28 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import moe.shizuku.manager.Helps
-import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.R
+import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.adb.AdbPairingTutorialActivity
 import moe.shizuku.manager.adb.AdbStarter
 import moe.shizuku.manager.databinding.HomeItemContainerBinding
 import moe.shizuku.manager.databinding.HomeStartWirelessAdbBinding
 import moe.shizuku.manager.home.showAccessibilityDialog
 import moe.shizuku.manager.receiver.NotifCancelReceiver
-import moe.shizuku.manager.starter.StarterActivity
+import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.CustomTabsHelper
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import rikka.core.content.asActivity
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
+import rikka.shizuku.Shizuku
 
 class StartWirelessAdbViewHolder(binding: HomeStartWirelessAdbBinding, root: View, private val scope: CoroutineScope) :
     BaseViewHolder<Any?>(root) {
@@ -44,11 +48,47 @@ class StartWirelessAdbViewHolder(binding: HomeStartWirelessAdbBinding, root: Vie
             }
         }
 
+        /**
+         * Start Shizuku over an already-open ADB TCP port without leaving the home screen.
+         * (Previously jumped to StarterActivity.)
+         */
+        fun startAdbInPlace(context: Context, scope: CoroutineScope, port: Int) {
+            val app = context.applicationContext
+            scope.launch {
+                try {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(app, R.string.home_hero_action_activating, Toast.LENGTH_SHORT).show()
+                    }
+                    AdbStarter.startAdb(app, port)
+                    Starter.waitForBinder()
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            app,
+                            app.getString(R.string.home_status_service_is_running, app.getString(R.string.app_name)),
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    ShizukuStateMachine.update()
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            app,
+                            e.message?.takeIf { it.isNotBlank() }
+                                ?: app.getString(R.string.home_status_service_not_running, app.getString(R.string.app_name)),
+                            Toast.LENGTH_LONG,
+                        ).show()
+                    }
+                }
+            }
+        }
+
         fun start (context: Context, scope: CoroutineScope) {
             if (ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING) {
                 // Real in-flight start: binder may still be coming. Stale STARTING (orphan
                 // after cancel/REPLACE) must be cleared so the user can retry.
-                if (rikka.shizuku.Shizuku.pingBinder()) {
+                if (Shizuku.pingBinder()) {
                     Toast.makeText(context, context.getString(R.string.toast_shizuku_already_starting), Toast.LENGTH_SHORT).show()
                     return
                 }
@@ -88,12 +128,9 @@ class StartWirelessAdbViewHolder(binding: HomeStartWirelessAdbBinding, root: Vie
                     AdbStarter.stopTcp(context, tcpPort)
                 }
                 AdbDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
-            // Otherwise ADB IS listening to a TCP port and the user wants to keep it open. Start Shizuku via TCP
+            // TCP already listening — start in place; do not jump to StarterActivity.
             } else {
-                val intent = Intent(context, StarterActivity::class.java).apply {
-                    putExtra(StarterActivity.EXTRA_PORT, tcpPort)
-                }
-                context.startActivity(intent)
+                startAdbInPlace(context, scope, tcpPort)
             }
         }
     }
