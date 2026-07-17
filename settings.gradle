@@ -1,0 +1,95 @@
+pluginManagement {
+    repositories {
+        maven { url = "https://maven.aliyun.com/repository/google" }
+        maven { url = "https://maven.aliyun.com/repository/central" }
+        maven { url = "https://maven.aliyun.com/repository/gradle-plugin" }
+        google()
+        mavenLocal()
+        mavenCentral()
+        maven {
+            url = "https://plugins.gradle.org/m2/"
+        }
+    }
+    plugins {
+        id "com.android.application" version "8.11.1"
+        id "com.android.library" version "8.11.1"
+        id "org.jetbrains.kotlin.android" version "2.2.20"
+        id "org.jetbrains.kotlin.plugin.serialization" version "2.2.20"
+        id "dev.rikka.tools.autoresconfig" version "1.2.2"
+        id "dev.rikka.tools.materialthemebuilder" version "1.5.1"
+        id "dev.rikka.tools.refine" version "4.4.0"
+    }
+
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        maven { url = "https://maven.aliyun.com/repository/google" }
+        maven { url = "https://maven.aliyun.com/repository/central" }
+        google()
+        mavenLocal()
+        mavenCentral()
+        maven {
+            url = "https://jitpack.io"
+            content {
+                includeGroup("com.github.topjohnwu.libsu")
+            }
+        }
+    }
+    versionCatalogs {
+        libs {
+            version("agp", "8.11.1")
+            version("androidx-annotation", "1.9.1")
+            version("androidx-core", "1.15.0")
+            version("hidden-api", "4.4.0")
+            version("refine", "4.4.0")
+
+            library("androidx-annotation", "androidx.annotation", "annotation").versionRef("androidx-annotation")
+            library("androidx-core", "androidx.core", "core").versionRef("androidx-core")
+            library("hidden-compat", "dev.rikka.hidden", "compat").versionRef("hidden-api")
+            library("hidden-stub", "dev.rikka.hidden", "stub").versionRef("hidden-api")
+            library("refine-runtime", "dev.rikka.tools.refine", "runtime").versionRef("refine")
+            library("refine-annotation", "dev.rikka.tools.refine", "annotation").versionRef("refine")
+            library("refine-annotation-processor", "dev.rikka.tools.refine", "annotation-processor").versionRef("refine")
+
+            // Consumed by api/* modules via alias(libs.plugins.android.library)
+            plugin("android-library", "com.android.library").versionRef("agp")
+            plugin("rikka-refine", "dev.rikka.tools.refine").versionRef("refine")
+        }
+    }
+}
+
+include ":server", ":starter", ":shell", ":manager", ":common"
+
+def root = "api"
+
+def propFile = file("local.properties")
+def props = new Properties()
+
+if (propFile.canRead()) {
+    props.load(new FileInputStream(propFile))
+
+    if (props != null) {
+        if (props["api.useLocal"].equals("true")) {
+            root = props["api.dir"]
+        }
+    }
+}
+
+include ":aidl"
+project(":aidl").projectDir = file("$root${File.separator}aidl")
+
+include ":rish"
+project(":rish").projectDir = file("$root${File.separator}rish")
+
+include ":shared"
+project(":shared").projectDir = file("$root${File.separator}shared")
+
+include ":api"
+project(":api").projectDir = file("$root${File.separator}api")
+
+include ":provider"
+project(":provider").projectDir = file("$root${File.separator}provider")
+
+include ":server-shared"
+project(":server-shared").projectDir = file("$root${File.separator}server-shared")

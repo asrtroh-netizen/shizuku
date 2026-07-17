@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- OneIms / OneIms Lite palette (Google Blue, aligned with OneIMS Theme.kt) -->
+    <color name="notification">#0B57D0</color>
+
+    <color name="app_color_light">#0B57D0</color>
+    <color name="app_color_dark">#A9C7FF</color>
+</resources>

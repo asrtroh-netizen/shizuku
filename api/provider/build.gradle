@@ -1,0 +1,34 @@
+plugins {
+    alias(libs.plugins.android.library)
+}
+
+android {
+    namespace = "rikka.shizuku.provider"
+    defaultConfig {
+        consumerProguardFiles = ["consumer-rules.pro"]
+    }
+    buildFeatures {
+        buildConfig = false
+    }
+    buildTypes {
+        release {
+            minifyEnabled = false
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+
+dependencies {
+    implementation project(":api")
+    implementation libs.androidx.annotation
+    implementation libs.androidx.core
+}
+
+ext {
+    publishLibrary = true
+    POM_NAME = "Shizuku API - provider"
+    POM_DESCRIPTION = "Content Provider for Shizuku."
+}

@@ -1,0 +1,41 @@
+plugins {
+    alias(libs.plugins.android.library)
+}
+
+android {
+    namespace = "rikka.rish"
+    defaultConfig {
+        externalNativeBuild {
+            cmake {
+                arguments = ["-DANDROID_STL=c++_static"]
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled = false
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1+"
+        }
+    }
+}
+
+dependencies {
+    implementation project(":api")
+
+    implementation libs.androidx.annotation
+}
+
+ext {
+    publishLibrary = false
+    POM_NAME = "RISH"
+    POM_DESCRIPTION = "RISH"
+}

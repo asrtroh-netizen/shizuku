@@ -1,0 +1,42 @@
+plugins {
+    id "idea"
+    id "com.android.library" apply false
+    id "org.jetbrains.kotlin.android" apply false
+}
+
+idea.module {
+    excludeDirs += file("out")
+}
+
+subprojects { subproject ->
+    plugins.withId("com.android.base") {
+        android {
+            // Local toolchain: platforms android-36, build-tools 35, ndk 27
+            compileSdk = 36
+            buildToolsVersion = "35.0.0"
+            ndkVersion = "27.0.12077973"
+            defaultConfig {
+                minSdk = 24
+                targetSdk = 36
+            }
+            compileOptions {
+                sourceCompatibility = JavaVersion.VERSION_21
+                targetCompatibility = JavaVersion.VERSION_21
+            }
+        }
+    }
+}
+
+def gitCountText = ""
+try {
+    gitCountText = "git rev-list --count HEAD".execute([], project.rootDir).text.trim()
+} catch (Throwable ignored) {
+    gitCountText = ""
+}
+def gitCommitCount = gitCountText.isInteger() ? Integer.parseInt(gitCountText) : 13700
+def baseVersionName = "13.7.0"
+def isBeta = project.hasProperty("beta")
+ext {
+    versionCode = gitCommitCount
+    versionName = "${baseVersionName}${if (isBeta) "-beta" else ""}-oneims-lite"
+}

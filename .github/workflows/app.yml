@@ -1,0 +1,153 @@
+name: Build App
+
+on:
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Debug'
+        type: boolean
+        required: false
+        default: false
+
+      prerelease:
+        description: 'Prerelease'
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+
+    env:
+      KEYSTORE: ${{ secrets.KEYSTORE }}
+
+    outputs:
+      versionName: ${{ steps.buildWithGradle.outputs.versionName }}
+      artifactName: ${{ steps.buildWithGradle.outputs.artifactName }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.prerelease && 'beta' || 'master' }}
+          submodules: 'recursive'
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Validate Signing Config
+        run: |
+          if [ "${{ inputs.debug }}" = "false" ] && [ "$KEYSTORE" = "" ]; then
+            echo "::error::Signing secrets not configured. Signing secrets are required for release builds."
+            exit 1
+          fi
+
+      - name: Create signing.properties
+        if: ${{ !inputs.debug && env.KEYSTORE != '' }}
+        run: |
+          echo KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }} > signing.properties
+          echo KEYSTORE_ALIAS=${{ secrets.KEYSTORE_ALIAS }} >> signing.properties
+          echo KEYSTORE_ALIAS_PASSWORD='${{ secrets.KEYSTORE_ALIAS_PASSWORD }}' >> signing.properties
+          echo KEYSTORE_FILE=../key.jks >> signing.properties
+          echo ${{ secrets.KEYSTORE }} | base64 --decode > key.jks
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          build-scan-publish: true
+          build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
+          build-scan-terms-of-use-agree: "yes"
+
+      - name: Build with Gradle
+        id: buildWithGradle
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
+          echo 'org.gradle.caching=true' >> gradle.properties
+          echo 'org.gradle.parallel=true' >> gradle.properties
+
+          if [ "${{ inputs.debug }}" = "true" ]; then
+            CMD="./gradlew :manager:assembleDebug"
+            APK_DIR="manager/build/outputs/apk/debug"
+          else
+            CMD="./gradlew :manager:assembleRelease"
+            APK_DIR="manager/build/outputs/apk/release"
+          fi
+
+          [ "${{ inputs.prerelease }}" = "true" ] && CMD="$CMD -Pbeta"
+
+          eval $CMD
+          FILE=$(ls "$APK_DIR"/*.apk)
+
+          VERSION=$(echo "$(basename "$FILE")" | sed -E 's/^shizuku-(.*)-(debug|release)\.apk/\1/')
+
+          ARTIFACT_NAME="shizuku-$VERSION"
+          [ "${{ inputs.debug }}" = "true" ] && ARTIFACT_NAME="${ARTIFACT_NAME}-debug"
+          ARTIFACT_NAME="${ARTIFACT_NAME}.apk"
+
+          RENAMED="$FILE"
+          if [ "$(basename "$FILE")" != "$ARTIFACT_NAME" ]; then
+            RENAMED="$(dirname "$FILE")/$ARTIFACT_NAME"
+            mv "$FILE" "$RENAMED"
+          fi
+
+          echo "versionName=$VERSION" >> $GITHUB_OUTPUT
+          echo "artifactName=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+          echo "filePath=$RENAMED" >> $GITHUB_OUTPUT
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ steps.buildWithGradle.outputs.artifactName }}
+          path: ${{ steps.buildWithGradle.outputs.filePath }}
+
+      - name: Attest Build Provenance
+        if: ${{ success() && !inputs.debug }}
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: manager/build/outputs/apk/release/*.apk
+
+  release:
+    if: ${{ !inputs.debug }}
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Create Release Tag
+        run: |
+          VERSION="${{ needs.build.outputs.versionName }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$VERSION" -m "Release version $VERSION"
+          git push origin "$VERSION"
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ needs.build.outputs.artifactName }}
+          path: files
+
+      - name: Create Draft Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.build.outputs.versionName }}
+        run: |
+          FLAGS="--draft"
+          [ "${{ inputs.prerelease }}" = "true" ] && FLAGS="$FLAGS --prerelease"
+          gh release create "$RELEASE_VERSION" files/*.apk $FLAGS
