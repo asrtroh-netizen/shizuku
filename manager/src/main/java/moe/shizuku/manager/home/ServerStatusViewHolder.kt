@@ -23,8 +23,9 @@ import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuApiConstants
 
 /**
- * OneKuku-style four-state hero card:
- * inactive (red) → activating → ready (white) → sleeping (white, no watchdog).
+ * Three-state hero card (no sleeping):
+ * inactive (red) → activating → ready (white).
+ * Survival stays on Watchdog / boot / binder wake — UI no longer labels Running∧¬Watchdog as sleep.
  */
 class ServerStatusViewHolder(
     private val binding: HomeServerStatusBinding,
@@ -32,7 +33,7 @@ class ServerStatusViewHolder(
     private val scope: CoroutineScope,
 ) : BaseViewHolder<ServiceStatus>(root) {
 
-    enum class HeroState { INACTIVE, ACTIVATING, READY, SLEEPING }
+    enum class HeroState { INACTIVE, ACTIVATING, READY }
 
     companion object {
         fun creator(scope: CoroutineScope): Creator<ServiceStatus> {
@@ -67,7 +68,7 @@ class ServerStatusViewHolder(
                 when (hero) {
                     HeroState.INACTIVE -> R.drawable.ic_server_error_24dp
                     HeroState.ACTIVATING -> R.drawable.ic_server_error_24dp
-                    else -> R.drawable.ic_server_ok_24dp
+                    HeroState.READY -> R.drawable.ic_server_ok_24dp
                 },
             ),
         )
@@ -80,9 +81,9 @@ class ServerStatusViewHolder(
         binding.heroDetail.setTextColor(ColorUtils.setAlphaComponent(fg, 200))
         binding.heroActionSub.setTextColor(ColorUtils.setAlphaComponent(fg, 184))
 
-        val settled = hero == HeroState.READY || hero == HeroState.SLEEPING
+        val settled = hero == HeroState.READY
         binding.heroTitle.text = when (hero) {
-            HeroState.READY, HeroState.SLEEPING -> context.getString(R.string.app_name)
+            HeroState.READY -> context.getString(R.string.app_name)
             HeroState.INACTIVE -> context.getString(R.string.home_hero_title_inactive)
             HeroState.ACTIVATING -> context.getString(R.string.home_hero_title_activating)
         }
@@ -91,7 +92,6 @@ class ServerStatusViewHolder(
                 HeroState.INACTIVE -> R.string.home_hero_pill_inactive
                 HeroState.ACTIVATING -> R.string.home_hero_pill_activating
                 HeroState.READY -> R.string.home_hero_pill_ready
-                HeroState.SLEEPING -> R.string.home_hero_pill_sleeping
             },
         )
         binding.heroSubtitle.isVisible = !settled
@@ -120,7 +120,7 @@ class ServerStatusViewHolder(
             when (hero) {
                 HeroState.INACTIVE -> R.string.home_hero_action_activate
                 HeroState.ACTIVATING -> R.string.home_hero_action_retry
-                HeroState.READY, HeroState.SLEEPING -> R.string.home_hero_action_detail
+                HeroState.READY -> R.string.home_hero_action_detail
             },
         )
         binding.heroActionSub.isVisible = hero == HeroState.INACTIVE || hero == HeroState.ACTIVATING
@@ -137,7 +137,7 @@ class ServerStatusViewHolder(
         val running = status.isRunning || Shizuku.pingBinder() ||
             ShizukuStateMachine.get() == ShizukuStateMachine.State.RUNNING
         if (running) {
-            return if (ShizukuSettings.isWatchdogRunning()) HeroState.READY else HeroState.SLEEPING
+            return HeroState.READY
         }
         if (ShizukuStateMachine.preferActivatingUi()) {
             return HeroState.ACTIVATING
@@ -148,20 +148,18 @@ class ServerStatusViewHolder(
     private fun resolveLitCount(hero: HeroState): Int = when (hero) {
         HeroState.INACTIVE -> 1
         HeroState.ACTIVATING -> 2
-        // Running (ready / sleeping) lights all four stages — READY used to stop at 3.
-        HeroState.READY, HeroState.SLEEPING -> 4
+        HeroState.READY -> 3
     }
 
     private fun colorsFor(hero: HeroState): Pair<Int, Int> {
         val c = itemView.context
-        // OneKuku look: red when inactive; white for activating / ready / sleeping (no blue).
+        // Red when inactive; white for activating / ready (no blue).
         return when (hero) {
             HeroState.INACTIVE ->
                 ContextCompat.getColor(c, R.color.hero_inactive_bg) to
                     ContextCompat.getColor(c, R.color.hero_inactive_fg)
             HeroState.ACTIVATING,
             HeroState.READY,
-            HeroState.SLEEPING,
             ->
                 ContextCompat.getColor(c, R.color.hero_ready_bg) to
                     ContextCompat.getColor(c, R.color.hero_ready_fg)
@@ -169,9 +167,9 @@ class ServerStatusViewHolder(
     }
 
     private fun applyStageStrip(litCount: Int, fg: Int) {
-        val dots = listOf(binding.stageDot1, binding.stageDot2, binding.stageDot3, binding.stageDot4)
-        val labels = listOf(binding.stageLabel1, binding.stageLabel2, binding.stageLabel3, binding.stageLabel4)
-        val lines = listOf(binding.stageLine1, binding.stageLine2, binding.stageLine3)
+        val dots = listOf(binding.stageDot1, binding.stageDot2, binding.stageDot3)
+        val labels = listOf(binding.stageLabel1, binding.stageLabel2, binding.stageLabel3)
+        val lines = listOf(binding.stageLine1, binding.stageLine2)
         dots.forEachIndexed { index, view ->
             val lit = index < litCount
             val color = if (lit) fg else ColorUtils.setAlphaComponent(fg, 82)
@@ -200,7 +198,7 @@ class ServerStatusViewHolder(
                 }
                 StartWirelessAdbViewHolder.start(itemView.context, scope)
             }
-            HeroState.READY, HeroState.SLEEPING -> showDetail()
+            HeroState.READY -> showDetail()
         }
     }
 
@@ -218,7 +216,6 @@ class ServerStatusViewHolder(
             HeroState.INACTIVE -> context.getString(R.string.home_hero_pill_inactive)
             HeroState.ACTIVATING -> context.getString(R.string.home_hero_pill_activating)
             HeroState.READY -> context.getString(R.string.home_hero_pill_ready)
-            HeroState.SLEEPING -> context.getString(R.string.home_hero_pill_sleeping)
         }
         val latest = "${Shizuku.getLatestServiceVersion()}.${ShizukuApiConstants.SERVER_PATCH_VERSION}"
         val body = context.getString(

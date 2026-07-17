@@ -16,14 +16,13 @@
     <string name="home_status_wifi_off">未连接</string>
     <string name="home_status_detail_body">状态：%1$s\n模式：%2$s\n版本：%3$s\nUID：%4$s\nWi‑Fi STA：%5$s\nADB 权限：%6$s\nTCP 模式：%7$s\n开机自启：%8$s</string>
 
-    <!-- OneKuku 风格四态状态卡 -->
+    <!-- 三态状态卡：未激活 / 激活中 / 就绪 -->
     <string name="home_hero_eyebrow">服务</string>
     <string name="home_hero_title_inactive">未激活</string>
     <string name="home_hero_title_activating">激活中…</string>
     <string name="home_hero_pill_inactive">未激活</string>
     <string name="home_hero_pill_activating">激活中</string>
     <string name="home_hero_pill_ready">就绪</string>
-    <string name="home_hero_pill_sleeping">休眠</string>
     <string name="home_hero_subtitle_inactive">Shizuku 服务未运行</string>
     <string name="home_hero_subtitle_activating">正在启动服务…</string>
     <string name="home_hero_detail_inactive">可用无线调试激活。请保持 Wi‑Fi 连接。</string>
@@ -31,7 +30,6 @@
     <string name="home_hero_stage_inactive">未激活</string>
     <string name="home_hero_stage_activating">激活中</string>
     <string name="home_hero_stage_ready">就绪</string>
-    <string name="home_hero_stage_sleeping">休眠</string>
     <string name="home_hero_action_activate">立即激活</string>
     <string name="home_hero_action_activating">激活中…</string>
     <string name="home_hero_action_retry">重试启动</string>
