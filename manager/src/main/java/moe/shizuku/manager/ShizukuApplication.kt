@@ -3,6 +3,7 @@ package moe.shizuku.manager
 import android.app.Application
 import android.content.Context
 import android.os.Build
+import android.os.UserManager
 import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import com.topjohnwu.superuser.Shell
@@ -44,16 +45,27 @@ class ShizukuApplication : Application() {
         LocaleDelegate.defaultLocale = ShizukuSettings.getLocale()
         AppCompatDelegate.setDefaultNightMode(ShizukuSettings.getNightMode())
 
-        if (ShizukuSettings.getWatchdog()) WatchdogService.start(context)
+        val unlocked = context.getSystemService(UserManager::class.java)?.isUserUnlocked != false
+        if (ShizukuSettings.getWatchdog() && unlocked) {
+            runCatching { WatchdogService.start(context) }
+        }
         // Paired once → keep Wi‑Fi auto-connect armed; nudge if already on Wi‑Fi.
+        // Skip WorkManager while credential-encrypted storage is locked (direct boot).
         if (EnvironmentUtils.canWirelessAutostart(context) || ShizukuSettings.getStartOnBoot(context)) {
             EnvironmentUtils.enableAutostartAfterPair(context)
-            moe.shizuku.manager.receiver.WifiReadyMonitor.ensureRegistered(context)
-            if (!ShizukuStateMachine.isRunning() &&
-                (!EnvironmentUtils.isWifiRequired() || EnvironmentUtils.isWifiClientConnected(context))
-            ) {
-                // Open-app nudge: HSSkyBoy path (WorkManager → SelfStarterService).
-                moe.shizuku.manager.worker.AdbStartWorker.enqueue(context, replaceStuck = true)
+            if (unlocked) {
+                moe.shizuku.manager.receiver.WifiReadyMonitor.ensureRegistered(context)
+                if (!ShizukuStateMachine.isRunning() &&
+                    (!EnvironmentUtils.isWifiRequired() || EnvironmentUtils.isWifiClientConnected(context))
+                ) {
+                    runCatching {
+                        moe.shizuku.manager.worker.AdbStartWorker.enqueue(context, replaceStuck = true)
+                    }.onFailure {
+                        Log.w("ShizukuApplication", "AdbStartWorker enqueue failed", it)
+                    }
+                }
+            } else {
+                moe.shizuku.manager.receiver.UserPresentRestartReceiver.setEnabled(context, true)
             }
         }
     }
