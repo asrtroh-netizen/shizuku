@@ -25,7 +25,7 @@ import moe.shizuku.manager.receiver.ShizukuReceiverStarter.updateNotification
 import moe.shizuku.manager.receiver.UserPresentRestartReceiver
 import moe.shizuku.manager.starter.SelfStarterService
 import moe.shizuku.manager.utils.EnvironmentUtils
-import moe.shizuku.manager.utils.ShizukuStateMachine
+import rikka.shizuku.Shizuku
 
 /**
  * HSSkyBoy-aligned wireless boot worker:
@@ -37,7 +37,9 @@ import moe.shizuku.manager.utils.ShizukuStateMachine
 class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        if (ShizukuStateMachine.isRunning()) {
+        // Match HSSkyBoy: ping binder, not local StateMachine sticky cache.
+        if (Shizuku.pingBinder()) {
+            Log.i(AppConstants.TAG, "AdbStartWorker: binder already alive, skip")
             UserPresentRestartReceiver.setEnabled(applicationContext, false)
             val nm = applicationContext.getSystemService(NotificationManager::class.java)
             nm?.cancel(ShizukuReceiverStarter.NOTIFICATION_ID)
@@ -88,6 +90,10 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             return Result.retry()
         }
 
+        Log.i(
+            AppConstants.TAG,
+            "AdbStartWorker: start SelfStarterService wireless=$wirelessAdbEnabled port=$startablePort"
+        )
         updateNotification(applicationContext, WorkerState.RUNNING)
         val intent = Intent(applicationContext, SelfStarterService::class.java).apply {
             putExtra(SelfStarterService.EXTRA_AUTO_ENABLE_WIRELESS_DEBUGGING, wirelessAdbEnabled)

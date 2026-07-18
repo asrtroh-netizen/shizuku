@@ -15,9 +15,8 @@ import moe.shizuku.manager.utils.ShizukuStateMachine
 import moe.shizuku.manager.worker.AdbStartWorker
 
 /**
- * HSSkyBoy-aligned boot trigger:
- * BOOT / LOCKED_BOOT → WorkManager (UNMETERED) → SelfStarterService.
- * NETWORK_STATE kept as a late Wi‑Fi kick (same worker).
+ * HSSkyBoy-aligned: do **not** use goAsync() here — finish-twice crashes the process
+ * (`IllegalStateException: Broadcast already finished`) and aborts autostart.
  */
 class BootCompleteReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
@@ -25,23 +24,21 @@ class BootCompleteReceiver : BroadcastReceiver() {
         when (action) {
             Intent.ACTION_LOCKED_BOOT_COMPLETED,
             Intent.ACTION_BOOT_COMPLETED -> {
-                val pending = goAsync()
-                try {
-                    WifiReadyMonitor.ensureRegistered(context)
-                    if (ShizukuSettings.getWatchdog()) {
-                        WatchdogService.start(context)
-                    }
-                    if (!ShizukuSettings.getStartOnBoot(context) &&
-                        !EnvironmentUtils.canWirelessAutostart(context)
-                    ) {
-                        Log.w(AppConstants.TAG, "boot: autostart not enabled")
-                        return
-                    }
-                    Log.i(AppConstants.TAG, "boot: enqueue AdbStartWorker (HSSkyBoy path)")
-                    AdbStartWorker.enqueue(context, replaceStuck = true)
-                } finally {
-                    pending.finish()
+                WifiReadyMonitor.ensureRegistered(context)
+                if (ShizukuSettings.getWatchdog()) {
+                    runCatching { WatchdogService.start(context) }
+                        .onFailure {
+                            Log.w(AppConstants.TAG, "boot: WatchdogService start failed", it)
+                        }
                 }
+                if (!ShizukuSettings.getStartOnBoot(context) &&
+                    !EnvironmentUtils.canWirelessAutostart(context)
+                ) {
+                    Log.w(AppConstants.TAG, "boot: autostart not enabled")
+                    return
+                }
+                Log.i(AppConstants.TAG, "boot: enqueue AdbStartWorker (HSSkyBoy path)")
+                AdbStartWorker.enqueue(context, replaceStuck = true)
             }
             WifiManager.NETWORK_STATE_CHANGED_ACTION -> {
                 if (!ShizukuSettings.getStartOnBoot(context) &&
