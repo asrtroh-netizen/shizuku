@@ -126,7 +126,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(handler) {
             if (root) startRoot()
             else AdbStarter.startAdb(appContext, port, { log(it) })
-            Starter.waitForBinder({ log(it) })
+            Starter.waitForBinder(log = { log(it) })
         }
     }
 

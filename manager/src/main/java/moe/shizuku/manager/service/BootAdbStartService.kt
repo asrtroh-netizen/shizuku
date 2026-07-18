@@ -174,10 +174,11 @@ class BootAdbStartService : Service() {
         private const val CHANNEL = "shizuku_boot_adb_fg"
         private const val NOTIF_ID = 1450
         const val EXTRA_DEBOUNCE_MS = "debounce_ms"
-        private const val BOOT_WIFI_WAIT_MS = 20_000L
-        private const val POST_WIRELESS_ENABLE_MS = 2_400L
+        // Keep short: late Wi‑Fi still retries via NETWORK_STATE → BootAdbStartService.
+        private const val BOOT_WIFI_WAIT_MS = 12_000L
+        private const val POST_WIRELESS_ENABLE_MS = 1_200L
         private const val UNLOCK_WAIT_MS = 90_000L
-        private const val UNLOCK_POLL_MS = 1_500L
+        private const val UNLOCK_POLL_MS = 500L
 
         fun enqueue(context: Context, debounceMs: Long = 0L) {
             val intent = Intent(context, BootAdbStartService::class.java)

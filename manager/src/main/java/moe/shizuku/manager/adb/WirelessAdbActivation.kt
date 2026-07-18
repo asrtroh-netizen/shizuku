@@ -28,12 +28,15 @@ import java.util.concurrent.TimeoutException
  * Boot FGS must call this directly — WorkManager alone is frozen by OEM battery policy.
  */
 object WirelessAdbActivation {
-    private const val POST_WIRELESS_ENABLE_MS = 2_400L
-    private const val MDNS_DISCOVERY_TIMEOUT_MS = 30_000L
-    private const val WIFI_WAIT_MS = 20_000L
+    private const val POST_WIRELESS_ENABLE_MS = 1_200L
+    private const val MDNS_DISCOVERY_TIMEOUT_MS = 12_000L
+    private const val WIFI_WAIT_MS = 12_000L
+    private const val BINDER_WAIT_MS = 20_000L
 
     /**
      * @return true when binder is running after activation.
+     * @param alreadyWaitedWifi Boot FGS already waited for Wi‑Fi and settled adb_wifi;
+     *   skip duplicate wait/settle here.
      */
     suspend fun activate(context: Context, alreadyWaitedWifi: Boolean = false): Boolean {
         val app = context.applicationContext
@@ -53,10 +56,15 @@ object WirelessAdbActivation {
                 }
             }
             val crWifi = app.contentResolver
-            val wifiWasOn = Settings.Global.getInt(crWifi, "adb_wifi_enabled", 0) == 1
-            Settings.Global.putInt(crWifi, "adb_wifi_enabled", 1)
-            if (!wifiWasOn) {
-                delay(POST_WIRELESS_ENABLE_MS)
+            if (alreadyWaitedWifi) {
+                // BootAdbStartService already enabled + settled; only ensure flag stays on.
+                Settings.Global.putInt(crWifi, "adb_wifi_enabled", 1)
+            } else {
+                val wifiWasOn = Settings.Global.getInt(crWifi, "adb_wifi_enabled", 0) == 1
+                Settings.Global.putInt(crWifi, "adb_wifi_enabled", 1)
+                if (!wifiWasOn) {
+                    delay(POST_WIRELESS_ENABLE_MS)
+                }
             }
         }
 
@@ -73,7 +81,7 @@ object WirelessAdbActivation {
 
         Log.i(AppConstants.TAG, "WirelessAdbActivation: AdbStarter on port=$port")
         AdbStarter.startAdb(app, port)
-        Starter.waitForBinder()
+        Starter.waitForBinder(timeoutMs = BINDER_WAIT_MS)
         val ok = ShizukuStateMachine.isRunning()
         Log.i(AppConstants.TAG, "WirelessAdbActivation: binder ok=$ok")
         return ok

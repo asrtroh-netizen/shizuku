@@ -31,7 +31,7 @@ class BootCompleteReceiver : BroadcastReceiver() {
                         WatchdogService.start(context)
                     }
                     Log.i(AppConstants.TAG, "boot: enqueue BootAdbStartService")
-                    BootAdbStartService.enqueue(context, debounceMs = 1_000L)
+                    BootAdbStartService.enqueue(context, debounceMs = 300L)
                 } finally {
                     pending.finish()
                 }

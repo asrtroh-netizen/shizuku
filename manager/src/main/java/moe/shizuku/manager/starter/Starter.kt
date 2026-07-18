@@ -21,16 +21,16 @@ object Starter {
 
     val serviceStartedMessage = "Service started, this window will be automatically closed in 3 seconds"
 
-    suspend fun waitForBinder(log: ((String) -> Unit)? = null) {
+    suspend fun waitForBinder(timeoutMs: Long = 60_000L, log: ((String) -> Unit)? = null) {
         try {
-            log?.invoke("\nWaiting for service. This may take up to 1 minute...")
-            withTimeout(60_000) {
+            log?.invoke("\nWaiting for service. This may take up to ${timeoutMs / 1000} seconds...")
+            withTimeout(timeoutMs) {
                 ShizukuStateMachine.asFlow()
                     .first { it == ShizukuStateMachine.State.RUNNING }
             }
             log?.invoke(serviceStartedMessage)
         } catch (e: TimeoutCancellationException) {
-            throw TimeoutException("Failed to receive binder within 1 minute")
+            throw TimeoutException("Failed to receive binder within ${timeoutMs / 1000} seconds")
         }
     }
 
