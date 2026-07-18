@@ -85,7 +85,11 @@ class SelfStarterService : Service(), LifecycleOwner {
         val wirelessEnabled = Settings.Global.getInt(contentResolver, "adb_wifi_enabled", 0) == 1
         val tcpPort = EnvironmentUtils.getAdbTcpPort()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && wirelessEnabled) {
+        // Prefer an already-open TCP port (HSSkyBoy fallback) — skip mDNS when possible.
+        if (tcpPort > 0) {
+            Log.i(AppConstants.TAG, "SelfStarterService: use tcp port=$tcpPort")
+            startViaAdb(tcpPort)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && wirelessEnabled) {
             portLive.removeObserver(portObserver)
             portLive.observeForever(portObserver)
             if (adbMdns == null) {
@@ -95,8 +99,6 @@ class SelfStarterService : Service(), LifecycleOwner {
             }
             adbMdns?.start()
             Log.i(AppConstants.TAG, "SelfStarterService: mDNS discovery started")
-        } else if (tcpPort > 0) {
-            startViaAdb(tcpPort)
         } else {
             Log.e(AppConstants.TAG, "SelfStarterService: no wireless ADB / TCP port")
             stopSelf()
@@ -117,12 +119,17 @@ class SelfStarterService : Service(), LifecycleOwner {
                 }
                 Log.i(AppConstants.TAG, "SelfStarterService: binder ready")
             } catch (t: Throwable) {
-                Log.w(AppConstants.TAG, "SelfStarterService: start failed", t)
-                if (ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING) {
-                    ShizukuStateMachine.update()
+                // State listeners used to throw CalledFromWrongThreadException mid-start.
+                if (rikka.shizuku.Shizuku.pingBinder()) {
+                    Log.w(AppConstants.TAG, "SelfStarterService: UI race after binder up", t)
+                } else {
+                    Log.w(AppConstants.TAG, "SelfStarterService: start failed", t)
+                    if (ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING) {
+                        ShizukuStateMachine.update()
+                    }
                 }
             } finally {
-                if (disableWirelessWhenFinished) {
+                if (disableWirelessWhenFinished && !rikka.shizuku.Shizuku.pingBinder()) {
                     runCatching {
                         Settings.Global.putInt(contentResolver, "adb_wifi_enabled", 0)
                     }

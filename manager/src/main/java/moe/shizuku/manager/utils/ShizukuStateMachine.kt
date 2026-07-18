@@ -2,6 +2,8 @@ package moe.shizuku.manager.utils
 
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
@@ -23,6 +25,7 @@ object ShizukuStateMachine {
 
     private var state = AtomicReference<State>(State.STOPPED)
     private val listeners = CopyOnWriteArrayList<(State) -> Unit>()
+    private val mainHandler = Handler(Looper.getMainLooper())
     /** ElapsedRealtime when we last entered STARTING — used to absorb brief STOPPED races in UI. */
     private val startingEnteredAt = AtomicLong(0L)
     private val leftStartingAt = AtomicLong(0L)
@@ -47,8 +50,23 @@ object ShizukuStateMachine {
             } else if (oldState == State.STARTING) {
                 leftStartingAt.set(SystemClock.elapsedRealtime())
             }
-            listeners.forEach { it(newState) }
+            // AdbStarter / SelfStarter run off main; UI listeners must not touch views there.
+            dispatchListeners(newState)
             Log.d("ShizukuStateMachine", newState.toString())
+        }
+    }
+
+    private fun dispatchListeners(newState: State) {
+        val notify = {
+            listeners.forEach { listener ->
+                runCatching { listener(newState) }
+                    .onFailure { Log.w("ShizukuStateMachine", "listener failed", it) }
+            }
+        }
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            notify()
+        } else {
+            mainHandler.post(notify)
         }
     }
 
@@ -108,7 +126,12 @@ object ShizukuStateMachine {
 
     fun addListener(listener: (State) -> Unit) {
         listeners.add(listener)
-        listener(state.get())
+        val current = state.get()
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            runCatching { listener(current) }
+        } else {
+            mainHandler.post { runCatching { listener(current) } }
+        }
     }
 
     fun removeListener(listener: (State) -> Unit) {
