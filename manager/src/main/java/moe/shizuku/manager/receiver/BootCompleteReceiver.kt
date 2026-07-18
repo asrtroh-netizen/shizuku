@@ -9,20 +9,21 @@ import android.os.Build
 import android.util.Log
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.ShizukuSettings
-import moe.shizuku.manager.service.BootAdbStartService
 import moe.shizuku.manager.service.WatchdogService
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
+import moe.shizuku.manager.worker.AdbStartWorker
 
 /**
- * OneKuku-aligned boot / Wi‑Fi triggers.
- * - BOOT_COMPLETED: FGS allowlist → [BootAdbStartService] (activation in-process)
- * - NETWORK_STATE_CHANGED: late Wi‑Fi → same FGS path (fallback WorkManager if FGS blocked)
+ * HSSkyBoy-aligned boot trigger:
+ * BOOT / LOCKED_BOOT → WorkManager (UNMETERED) → SelfStarterService.
+ * NETWORK_STATE kept as a late Wi‑Fi kick (same worker).
  */
 class BootCompleteReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         val action = intent?.action ?: return
         when (action) {
+            Intent.ACTION_LOCKED_BOOT_COMPLETED,
             Intent.ACTION_BOOT_COMPLETED -> {
                 val pending = goAsync()
                 try {
@@ -30,8 +31,14 @@ class BootCompleteReceiver : BroadcastReceiver() {
                     if (ShizukuSettings.getWatchdog()) {
                         WatchdogService.start(context)
                     }
-                    Log.i(AppConstants.TAG, "boot: enqueue BootAdbStartService")
-                    BootAdbStartService.enqueue(context, debounceMs = 300L)
+                    if (!ShizukuSettings.getStartOnBoot(context) &&
+                        !EnvironmentUtils.canWirelessAutostart(context)
+                    ) {
+                        Log.w(AppConstants.TAG, "boot: autostart not enabled")
+                        return
+                    }
+                    Log.i(AppConstants.TAG, "boot: enqueue AdbStartWorker (HSSkyBoy path)")
+                    AdbStartWorker.enqueue(context, replaceStuck = true)
                 } finally {
                     pending.finish()
                 }
@@ -52,9 +59,8 @@ class BootCompleteReceiver : BroadcastReceiver() {
                     !EnvironmentUtils.isWifiClientConnected(context)
                 ) return
 
-                Log.i(AppConstants.TAG, "wifi connected → BootAdbStartService (in-FGS)")
-                // Prefer FGS path (same as boot), not bare WorkManager.
-                BootAdbStartService.enqueue(context, debounceMs = 500L)
+                Log.i(AppConstants.TAG, "wifi connected → AdbStartWorker")
+                AdbStartWorker.enqueue(context, replaceStuck = true)
             }
         }
     }

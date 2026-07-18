@@ -8,9 +8,9 @@ import android.net.NetworkRequest
 import android.util.Log
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.ShizukuSettings
-import moe.shizuku.manager.service.BootAdbStartService
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
+import moe.shizuku.manager.worker.AdbStartWorker
 
 /**
  * Process-local Wi‑Fi STA callback: once paired (key + WSS), retry start when Wi‑Fi is up.
@@ -82,7 +82,7 @@ object WifiReadyMonitor {
         if (now - lastEnqueueAtMs < DEBOUNCE_MS) return
         lastEnqueueAtMs = now
 
-        Log.i(AppConstants.TAG, "WifiReadyMonitor: Wi‑Fi up, BootAdbStartService")
-        BootAdbStartService.enqueue(context, debounceMs = 300L)
+        Log.i(AppConstants.TAG, "WifiReadyMonitor: Wi‑Fi up, AdbStartWorker")
+        AdbStartWorker.enqueue(context, replaceStuck = true)
     }
 }

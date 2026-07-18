@@ -179,6 +179,16 @@
             android:foregroundServiceType="shortService" />
 
         <service
+            android:name=".adb.AdbPairingNotificationListener"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <service
             android:name=".adb.AdbPairingAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:exported="true">
@@ -191,13 +201,23 @@
         </service>
 
         <service
-            android:name=".service.BootAdbStartService"
+            android:name=".starter.SelfStarterService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Boot autostart wireless/TCP ADB Shizuku service after unlock and Wi-Fi, mirroring OneKuku boot restore foreground path." />
+                android:value="HSSkyBoy-aligned wireless ADB autostart: mDNS discovery and AdbStarter after WorkManager Wi-Fi constraint." />
+        </service>
+
+        <service
+            android:name=".service.BootAdbStartService"
+            android:enabled="false"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Legacy boot FGS retained disabled; boot path uses SelfStarterService." />
         </service>
 
         <service
@@ -227,11 +247,22 @@
 
         <receiver
             android:name=".receiver.BootCompleteReceiver"
+            android:directBootAware="true"
             android:enabled="false"
             android:exported="true">
             <intent-filter>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.net.wifi.STATE_CHANGE" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".receiver.UserPresentRestartReceiver"
+            android:enabled="false"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.USER_PRESENT" />
             </intent-filter>
         </receiver>
 

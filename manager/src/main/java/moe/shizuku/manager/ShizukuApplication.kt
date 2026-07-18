@@ -52,8 +52,8 @@ class ShizukuApplication : Application() {
             if (!ShizukuStateMachine.isRunning() &&
                 (!EnvironmentUtils.isWifiRequired() || EnvironmentUtils.isWifiClientConnected(context))
             ) {
-                // Open-app nudge: same FGS path as boot (not WorkManager-only).
-                moe.shizuku.manager.service.BootAdbStartService.enqueue(context, debounceMs = 0L)
+                // Open-app nudge: HSSkyBoy path (WorkManager → SelfStarterService).
+                moe.shizuku.manager.worker.AdbStartWorker.enqueue(context, replaceStuck = true)
             }
         }
     }

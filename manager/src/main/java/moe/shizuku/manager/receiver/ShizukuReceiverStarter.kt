@@ -152,7 +152,7 @@ object ShizukuReceiverStarter {
         }
     }
 
-    private fun showPermissionErrorNotification(context: Context) {
+    fun showPermissionErrorNotification(context: Context) {
 
         val channel = NotificationChannel(
             CHANNEL_ID,
