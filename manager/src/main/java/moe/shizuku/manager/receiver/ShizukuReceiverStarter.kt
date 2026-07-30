@@ -1,183 +1,157 @@
 package moe.shizuku.manager.receiver
 
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
+import android.os.UserManager
 import android.provider.Settings
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import com.topjohnwu.superuser.Shell
-import moe.shizuku.manager.R
 import moe.shizuku.manager.AppConstants
+import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
-import moe.shizuku.manager.ShizukuSettings.LaunchMethod
+import moe.shizuku.manager.adb.AdbWirelessHelper
+import moe.shizuku.manager.starter.SelfStarterService
 import moe.shizuku.manager.starter.Starter
-import moe.shizuku.manager.utils.EnvironmentUtils
-import moe.shizuku.manager.utils.SettingsPage
-import moe.shizuku.manager.utils.ShizukuStateMachine
 import moe.shizuku.manager.utils.UserHandleCompat
-import moe.shizuku.manager.worker.AdbStartWorker
+import rikka.shizuku.Shizuku
 
 object ShizukuReceiverStarter {
 
-    const val NOTIFICATION_ID = 1447
-    private const val CHANNEL_ID = "AdbStartWorker"
-
-    enum class WorkerState {
-        AWAITING_WIFI,
-        AWAITING_RETRY,
-        RUNNING,
-        STOPPED
-    }
-
-    fun start(context: Context, forceStart: Boolean = false) {
-        if ((UserHandleCompat.myUserId() > 0 || ShizukuStateMachine.isRunning()) && !forceStart) return
-        // Skip only a live STARTING; stale STARTING must not block late Wi‑Fi autostart.
-        if (!forceStart &&
-            ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING &&
-            !ShizukuStateMachine.isStartingStale()
-        ) {
+    fun startOnBoot(context: Context) {
+        if (UserHandleCompat.myUserId() > 0 || Shizuku.pingBinder()) {
             return
         }
 
-        val mode = ShizukuSettings.getLastLaunchMode()
-        // Clean install / wiped prefs: mode is UNKNOWN. If we already have
-        // WRITE_SECURE_SETTINGS (wireless path used before), treat as ADB so
-        // OneKuku-style boot autostart is not silently skipped.
-        val asAdb = mode == LaunchMethod.ADB ||
-            (mode == LaunchMethod.UNKNOWN &&
-                context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED &&
-                (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ||
-                    EnvironmentUtils.isTelevision() ||
-                    EnvironmentUtils.getAdbTcpPort() > 0))
+        val preferences = ShizukuSettings.getPreferences()
+        val startOnBootRootEnabled =
+            preferences.getBoolean(ShizukuSettings.KEEP_START_ON_BOOT, false)
+        val startOnBootWirelessEnabled =
+            preferences.getBoolean(ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, false)
 
-        if (mode == LaunchMethod.ROOT) {
-            rootStart(context)
-        } else if (asAdb &&
-            (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ||
-                EnvironmentUtils.isTelevision() ||
-                EnvironmentUtils.getAdbTcpPort() > 0)
-        ) {
-                if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
-                    if (mode == LaunchMethod.UNKNOWN) {
-                        ShizukuSettings.setLastLaunchMode(LaunchMethod.ADB)
-                    }
-                    AdbStartWorker.enqueue(context)
-                    updateNotification(context, WorkerState.AWAITING_WIFI)
-                } else {
-                    showPermissionErrorNotification(context)
+        if (startOnBootRootEnabled) {
+            rootStart()
+            return
+        }
+
+        if (startOnBootWirelessEnabled) {
+            startWireless(context, requireBootSupport = true)
+            return
+        }
+
+        Log.w(AppConstants.TAG, "No support start on boot")
+    }
+
+    fun startWireless(
+        context: Context,
+        force: Boolean = false,
+        requireBootSupport: Boolean = false
+    ) {
+        if (UserHandleCompat.myUserId() > 0 || (Shizuku.pingBinder() && !force)) {
+            BootStartNotifications.dismiss(context)
+            return
+        }
+
+        if (requireBootSupport && Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            Log.w(AppConstants.TAG, "Wireless boot start requires Android 13 or above")
+            BootStartNotifications.showFailure(
+                context,
+                context.getString(R.string.wireless_boot_wifi_required)
+            )
+            return
+        }
+
+        val hasSecureSettingsPermission =
+            context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED
+        val startablePort = AdbWirelessHelper().getStartableAdbPort()
+
+        if (!hasSecureSettingsPermission && startablePort == null) {
+            Log.w(AppConstants.TAG, "Wireless boot worker missing WRITE_SECURE_SETTINGS")
+            BootStartNotifications.showFailure(
+                context,
+                context.getString(R.string.permission_write_secure_settings_required)
+            )
+            return
+        }
+
+        val userManager = context.getSystemService(UserManager::class.java)
+        val unlocked = userManager?.isUserUnlocked == true
+        val wifiAdbOn = isWirelessAdbEnabled(context)
+
+        // Hot path: burn BOOT_COMPLETED / USER_PRESENT FGS window immediately.
+        // WorkManager scheduling often costs multi-seconds after unlock.
+        if (unlocked && (startablePort != null || wifiAdbOn || hasSecureSettingsPermission)) {
+            val autoEnable = hasSecureSettingsPermission && !wifiAdbOn
+            if (startSelfStarterDirect(context, autoEnable)) {
+                WifiReadyMonitor.ensureRegistered(context)
+                // Port unknown: keep Worker as soft backup for late Wi‑Fi / TLS.
+                if (startablePort == null) {
+                    WirelessBootStartWorker.enqueue(context)
                 }
-        } else {
-            Log.w(AppConstants.TAG, "Background start not supported (mode=$mode)")
+                return
+            }
+        }
+
+        WirelessBootStartWorker.enqueue(context)
+    }
+
+    private fun isWirelessAdbEnabled(context: Context): Boolean {
+        return try {
+            Settings.Global.getInt(context.contentResolver, "adb_wifi_enabled", 0) == 1
+        } catch (_: Throwable) {
+            false
         }
     }
 
-    fun buildNotification(context: Context, msg: String? = null): Notification {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            context.getString(R.string.wadb_notification_title),
-            NotificationManager.IMPORTANCE_LOW
-        )
-        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.createNotificationChannel(channel)
-
-        val cancelIntent = Intent(context, NotifCancelReceiver::class.java)
-        val cancelPendingIntent = PendingIntent.getBroadcast(
-            context, 0, cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val attemptNowIntent = Intent(context, NotifAttemptReceiver::class.java)
-        val attemptNowPendingIntent = PendingIntent.getBroadcast(
-            context, 0, attemptNowIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val restoreIntent = Intent(context, NotifRestoreReceiver::class.java)
-        val restorePendingIntent = PendingIntent.getBroadcast(
-            context, 0, restoreIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val wifiIntent = SettingsPage.InternetPanel.buildIntent(context)
-        val wifiPendingIntent = PendingIntent.getActivity(
-            context, 0, wifiIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val nb = NotificationCompat.Builder(context, CHANNEL_ID)
-        
-        if (msg != null) nb.setContentText(msg)
-
-        return nb
-            .setSmallIcon(R.drawable.ic_system_icon)
-            .setContentTitle(context.getString(R.string.wadb_notification_title))
-            .setOngoing(true)
-            .setSilent(true)
-            .addAction(R.drawable.ic_server_restart, context.getString(R.string.wadb_notification_attempt_now), attemptNowPendingIntent)
-            .addAction(R.drawable.ic_close_24, context.getString(android.R.string.cancel), cancelPendingIntent)
-            .setDeleteIntent(restorePendingIntent)
-            .setContentIntent(wifiPendingIntent)
-            .build()
-    }
-
-    fun updateNotification(context: Context, state: WorkerState) {
-        if (state == WorkerState.STOPPED) return
-        val msgId = when (state) {
-            WorkerState.AWAITING_WIFI -> R.string.wadb_notification_wifi_required
-            WorkerState.AWAITING_RETRY -> R.string.wadb_notification_retry
-            else -> null
+    private fun startSelfStarterDirect(context: Context, autoEnable: Boolean): Boolean {
+        return try {
+            context.startForegroundService(
+                Intent(context, SelfStarterService::class.java).apply {
+                    putExtra(SelfStarterService.EXTRA_AUTO_ENABLE_WIRELESS_DEBUGGING, autoEnable)
+                    putExtra(SelfStarterService.EXTRA_FORCE_RESTART, false)
+                    putExtra(
+                        SelfStarterService.EXTRA_DISABLE_WIRELESS_DEBUGGING_WHEN_FINISHED,
+                        false
+                    )
+                }
+            )
+            Log.i(AppConstants.TAG, "startWireless: direct SelfStarter (autoEnable=$autoEnable)")
+            true
+        } catch (e: Exception) {
+            Log.w(AppConstants.TAG, "startWireless: direct SelfStarter failed, fallback Worker", e)
+            false
         }
-        val msg = if (msgId != null) context.getString(msgId) else null
-        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.notify(NOTIFICATION_ID, buildNotification(context, msg))
     }
 
-    private fun rootStart(context: Context) {
-        if (!Shell.getShell().isRoot) {
-            //NotificationHelper.notify(context, AppConstants.NOTIFICATION_ID_STATUS, AppConstants.NOTIFICATION_CHANNEL_STATUS, R.string.notification_service_start_no_root)
-            Shell.getCachedShell()?.close()
+    private fun rootStart() {
+        if (Shell.getShell().isRoot) {
+            Shell.cmd(Starter.internalCommand).exec()
             return
         }
-
-        try {
-            ShizukuStateMachine.set(ShizukuStateMachine.State.STARTING)
-            Shell.cmd(Starter.internalCommand).exec()
-        } catch (e: Exception) {
-            Log.e(AppConstants.TAG, "Failed to start Shizuku with root", e)
-            ShizukuStateMachine.update()
+        Shell.getCachedShell()?.close()
+        // libsu 未拿到 root shell 时，再试一次原生 su -c（部分机型 Magisk 授权时机更晚）
+        val cmd = Starter.internalCommand
+        val ok = runCatching {
+            val process = ProcessBuilder("su", "-c", cmd)
+                .redirectErrorStream(true)
+                .start()
+            val finished = process.waitFor(25, java.util.concurrent.TimeUnit.SECONDS)
+            if (!finished) {
+                process.destroyForcibly()
+                Log.w(AppConstants.TAG, "rootStart: su -c timed out")
+                return@runCatching false
+            }
+            val code = process.exitValue()
+            Log.i(AppConstants.TAG, "rootStart: su -c exit=$code")
+            code == 0
+        }.getOrElse { error ->
+            Log.w(AppConstants.TAG, "rootStart: su -c failed", error)
+            false
         }
-    }
-
-    fun showPermissionErrorNotification(context: Context) {
-
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            context.getString(R.string.wadb_notification_title),
-            NotificationManager.IMPORTANCE_LOW
-        )
-        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.createNotificationChannel(channel)
-
-        val webpageIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/thedjchi/Shizuku/wiki#shizuku-isnt-starting-on-boot-for-me"))
-        val pendingWebpageIntent = PendingIntent.getActivity(
-            context, 0, webpageIntent, PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val msg = context.getString(R.string.wadb_permission_error_notification_content)
-
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_system_icon)
-            .setContentTitle(context.getString(R.string.wadb_permission_error_notification_title))
-            .setContentText(msg)
-            .setSilent(true)
-            .setContentIntent(pendingWebpageIntent)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(msg))
-            .build()
-
-        nm.notify(NOTIFICATION_ID, notification)
+        if (!ok) {
+            Log.w(AppConstants.TAG, "rootStart: no root shell available")
+        }
     }
 }

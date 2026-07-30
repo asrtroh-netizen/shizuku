@@ -13,7 +13,7 @@ import rikka.material.app.MaterialActivity
 abstract class AppActivity : MaterialActivity() {
 
     override fun computeUserThemeKey(): String {
-        return ThemeHelper.getTheme(this) + ThemeHelper.isUsingSystemColor()
+        return ThemeHelper.getThemeKey(this)
     }
 
     override fun onApplyUserThemeResource(theme: Theme, isDecorView: Boolean) {
@@ -24,7 +24,34 @@ abstract class AppActivity : MaterialActivity() {
                 theme.applyStyle(R.style.ThemeOverlay_DynamicColors_Light, true)
         }
 
-        theme.applyStyle(ThemeHelper.getThemeStyleRes(this), true)
+        if (ThemeHelper.isBlackNightTheme(this) && resources.configuration.isNight()) {
+            theme.applyStyle(R.style.ThemeOverlay_Black, true)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    override fun onApplyTranslucentSystemBars() {
+        super.onApplyTranslucentSystemBars()
+
+        val window = window
+        val theme = theme
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            window?.decorView?.post {
+                if (window.decorView.rootWindowInsets?.systemWindowInsetBottom ?: 0 >= Resources.getSystem().displayMetrics.density * 40) {
+                    window.navigationBarColor =
+                        theme.resolveColor(android.R.attr.navigationBarColor) and 0x00ffffff or -0x20000000
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        window.isNavigationBarContrastEnforced = false
+                    }
+                } else {
+                    window.navigationBarColor = Color.TRANSPARENT
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        window.isNavigationBarContrastEnforced = true
+                    }
+                }
+            }
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -33,4 +60,4 @@ abstract class AppActivity : MaterialActivity() {
         }
         return true
     }
-} 
+}

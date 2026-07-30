@@ -11,6 +11,7 @@ import static rikka.shizuku.ShizukuApiConstants.BIND_APPLICATION_SERVER_VERSION;
 import static rikka.shizuku.ShizukuApiConstants.BIND_APPLICATION_SHOULD_SHOW_REQUEST_PERMISSION_RATIONALE;
 import static rikka.shizuku.ShizukuApiConstants.REQUEST_PERMISSION_REPLY_ALLOWED;
 import static rikka.shizuku.ShizukuApiConstants.REQUEST_PERMISSION_REPLY_IS_ONETIME;
+import static rikka.shizuku.server.ServerConstants.MANAGER_APPLICATION_ID;
 import static rikka.shizuku.server.ServerConstants.PERMISSION;
 
 import android.content.Context;
@@ -29,20 +30,16 @@ import android.os.Looper;
 import android.os.Parcel;
 import android.os.RemoteException;
 import android.os.ServiceManager;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import java.io.File;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import kotlin.collections.ArraysKt;
+import rikka.shizuku.common.util.InstalledPackagesCompat;
 import moe.shizuku.api.BinderContainer;
 import moe.shizuku.common.util.BuildUtils;
 import moe.shizuku.common.util.OsUtils;
@@ -50,45 +47,16 @@ import moe.shizuku.server.IShizukuApplication;
 import rikka.hidden.compat.ActivityManagerApis;
 import rikka.hidden.compat.DeviceIdleControllerApis;
 import rikka.hidden.compat.PackageManagerApis;
-import rikka.shizuku.server.util.Android17Compat;
+import rikka.hidden.compat.PermissionManagerApis;
 import rikka.hidden.compat.UserManagerApis;
 import rikka.parcelablelist.ParcelableListSlice;
 import rikka.rish.RishConfig;
 import rikka.shizuku.ShizukuApiConstants;
 import rikka.shizuku.server.api.IContentProviderUtils;
 import rikka.shizuku.server.util.HandlerUtil;
-import rikka.shizuku.server.util.InstalledPackagesCompat;
 import rikka.shizuku.server.util.UserHandleCompat;
 
 public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuClientManager, ShizukuConfigManager> {
-
-    public static final String MANAGER_APPLICATION_ID;
-
-    static {
-        String packageName = null;
-        try {
-            String apk = System.getenv("CLASSPATH");
-
-            int lastSlash = apk.lastIndexOf(File.separatorChar);
-            String parentDir = apk.substring(0, lastSlash);
-
-            int secondLastSlash = parentDir.lastIndexOf(File.separatorChar);
-            String dirName = parentDir.substring(secondLastSlash + 1);
-
-            int dash = dirName.indexOf('-');
-            if (dash > 0) {
-                packageName = dirName.substring(0, dash);
-            } else {
-                packageName = dirName;
-            }
-
-            LOGGER.i("Manager package name is " + packageName);
-        } catch (Throwable tr) {
-            LOGGER.w("Couldn't get manager package name from CLASSPATH", tr);
-        }
-        MANAGER_APPLICATION_ID = packageName;
-    }
-
 
     public static void main(String[] args) {
         DdmHandleAppName.setAppName("shizuku_server", 0);
@@ -111,7 +79,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     public static ApplicationInfo getManagerApplicationInfo() {
-        return Android17Compat.getApplicationInfo(MANAGER_APPLICATION_ID, 0, 0);
+        return PackageManagerApis.getApplicationInfoNoThrow(MANAGER_APPLICATION_ID, 0, 0);
     }
 
     @SuppressWarnings({"FieldCanBeLocal"})
@@ -195,10 +163,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         if (UserHandleCompat.getAppId(callingUid) == managerAppId) {
             return true;
         }
-        if (clientRecord == null && checkCallingPermission() == PackageManager.PERMISSION_GRANTED) {
-            return true;
-        }
-        return false;
+        return clientRecord == null && checkCallingPermission() == PackageManager.PERMISSION_GRANTED;
     }
 
     @Override
@@ -271,7 +236,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             reply.putBoolean(BIND_APPLICATION_SHOULD_SHOW_REQUEST_PERMISSION_RATIONALE, false);
         } else {
             try {
-                Android17Compat.grantRuntimePermission(MANAGER_APPLICATION_ID,
+                PermissionManagerApis.grantRuntimePermission(MANAGER_APPLICATION_ID,
                         WRITE_SECURE_SETTINGS, UserHandleCompat.getUserId(callingUid));
             } catch (RemoteException e) {
                 LOGGER.w(e, "grant WRITE_SECURE_SETTINGS");
@@ -286,12 +251,12 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
     @Override
     public void showPermissionConfirmation(int requestCode, @NonNull ClientRecord clientRecord, int callingUid, int callingPid, int userId) {
-        ApplicationInfo ai = Android17Compat.getApplicationInfo(clientRecord.packageName, 0, userId);
+        ApplicationInfo ai = PackageManagerApis.getApplicationInfoNoThrow(clientRecord.packageName, 0, userId);
         if (ai == null) {
             return;
         }
 
-        PackageInfo pi = Android17Compat.getPackageInfo(MANAGER_APPLICATION_ID, 0, userId);
+        PackageInfo pi = PackageManagerApis.getPackageInfoNoThrow(MANAGER_APPLICATION_ID, 0, userId);
         UserInfo userInfo = UserManagerApis.getUserInfo(userId);
         boolean isWorkProfileUser = BuildUtils.atLeast30() ?
                 "android.os.usertype.profile.MANAGED".equals(userInfo.userType) :
@@ -337,6 +302,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             for (ClientRecord record : records) {
                 packages.add(record.packageName);
                 record.allowed = allowed;
+                record.onetime = onetime;
                 if (record.pid == requestPid) {
                     record.dispatchRequestPermissionResult(requestCode, allowed);
                 }
@@ -347,26 +313,26 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             configManager.update(requestUid, packages, ConfigManager.MASK_PERMISSION, allowed ? ConfigManager.FLAG_ALLOWED : ConfigManager.FLAG_DENIED);
         }
 
-        if (!onetime && allowed) {
+        if (!onetime) {
             int userId = UserHandleCompat.getUserId(requestUid);
 
             for (String packageName : PackageManagerApis.getPackagesForUidNoThrow(requestUid)) {
-                PackageInfo pi = Android17Compat.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS, userId);
+                PackageInfo pi = PackageManagerApis.getPackageInfoNoThrow(packageName, PackageManager.GET_PERMISSIONS, userId);
                 if (pi == null || pi.requestedPermissions == null || !ArraysKt.contains(pi.requestedPermissions, PERMISSION)) {
                     continue;
                 }
 
-                int deviceId = 0;//Context.DEVICE_ID_DEFAULT
+//                int deviceId = 0;//Context.DEVICE_ID_DEFAULT
                 if (allowed) {
-                    Android17Compat.grantRuntimePermission(packageName, PERMISSION, userId);
+                    PermissionManagerApis.grantRuntimePermission(packageName, PERMISSION, userId);
                 } else {
-                    Android17Compat.revokeRuntimePermission(packageName, PERMISSION, userId);
+                    PermissionManagerApis.revokeRuntimePermission(packageName, PERMISSION, userId);
                 }
             }
         }
     }
 
-    private int  getFlagsForUidInternal(int uid, int mask, boolean allowRuntimePermission) {
+    private int getFlagsForUidInternal(int uid, int mask, boolean allowRuntimePermission) {
         ShizukuConfig.PackageEntry entry = configManager.find(uid);
         if (entry != null) {
             return entry.flags & mask;
@@ -375,13 +341,13 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         if (allowRuntimePermission && (mask & ConfigManager.MASK_PERMISSION) != 0) {
             int userId = UserHandleCompat.getUserId(uid);
             for (String packageName : PackageManagerApis.getPackagesForUidNoThrow(uid)) {
-                PackageInfo pi = Android17Compat.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS, userId);
+                PackageInfo pi = PackageManagerApis.getPackageInfoNoThrow(packageName, PackageManager.GET_PERMISSIONS, userId);
                 if (pi == null || pi.requestedPermissions == null || !ArraysKt.contains(pi.requestedPermissions, PERMISSION)) {
                     continue;
                 }
 
                 try {
-                    if (Android17Compat.checkPermission(PERMISSION, uid) == PackageManager.PERMISSION_GRANTED) {
+                    if (PermissionManagerApis.checkPermission(PERMISSION, uid) == PackageManager.PERMISSION_GRANTED) {
                         return ConfigManager.FLAG_ALLOWED;
                     }
                 } catch (Throwable e) {
@@ -426,16 +392,16 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             }
 
             for (String packageName : PackageManagerApis.getPackagesForUidNoThrow(uid)) {
-                PackageInfo pi = Android17Compat.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS, userId);
+                PackageInfo pi = PackageManagerApis.getPackageInfoNoThrow(packageName, PackageManager.GET_PERMISSIONS, userId);
                 if (pi == null || pi.requestedPermissions == null || !ArraysKt.contains(pi.requestedPermissions, PERMISSION)) {
                     continue;
                 }
 
                 int deviceId = 0;//Context.DEVICE_ID_DEFAULT
                 if (allowed) {
-                    Android17Compat.grantRuntimePermission(packageName, PERMISSION, userId);
+                    PermissionManagerApis.grantRuntimePermission(packageName, PERMISSION, userId);
                 } else {
-                    Android17Compat.revokeRuntimePermission(packageName, PERMISSION, userId);
+                    PermissionManagerApis.revokeRuntimePermission(packageName, PERMISSION, userId);
                 }
 
                 // TODO kill user service using
@@ -509,63 +475,42 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
     private static void sendBinderToClient(Binder binder, int userId) {
         try {
-            Stream<PackageInfo> packages =
-                InstalledPackagesCompat.getInstalledPackagesNoThrow(
-                    PackageManager.GET_PERMISSIONS, userId
-                )
-                .stream()
-                .filter(pi -> pi != null && pi.requestedPermissions != null)
-                .filter(pi -> ArraysKt.contains(pi.requestedPermissions, PERMISSION));
+            for (PackageInfo pi : InstalledPackagesCompat.getInstalledPackagesNoThrow(PackageManager.GET_PERMISSIONS, userId)) {
+                if (pi == null || pi.requestedPermissions == null)
+                    continue;
 
-            LOGGER.i("sending binders");
-            packages
-                .parallel()
-                .forEach(pi -> {
+                if (ArraysKt.contains(pi.requestedPermissions, PERMISSION)) {
                     sendBinderToUserApp(binder, pi.packageName, userId);
-                });
-            LOGGER.i("sent binders");
+                }
+            }
         } catch (Throwable tr) {
             LOGGER.e("exception when call getInstalledPackages", tr);
         }
     }
 
     void sendBinderToManager() {
-        sendBinderToManager(this);
+        sendBinderToManger(this);
     }
 
-    private static void sendBinderToManager(Binder binder) {
+    private static void sendBinderToManger(Binder binder) {
         for (int userId : UserManagerApis.getUserIdsNoThrow()) {
-            sendBinderToManager(binder, userId);
+            sendBinderToManger(binder, userId);
         }
     }
 
-    static void sendBinderToManager(Binder binder, int userId) {
-        boolean success = sendBinderToUserApp(binder, MANAGER_APPLICATION_ID, userId);
-        if (!success) {
-            // For unknown reason, sometimes this could happens
-            // Kill Shizuku app and try again could work
-            try {
-                LOGGER.e("kill %s in user %d and try again", MANAGER_APPLICATION_ID, userId);
-                ActivityManagerApis.forceStopPackageNoThrow(MANAGER_APPLICATION_ID, userId);
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ignored) {}
-                success = sendBinderToUserApp(binder, MANAGER_APPLICATION_ID, userId);
-                if (success) {
-                    LOGGER.e("retry succeeded");
-                } else {
-                    LOGGER.e("retry failed");
-                }
-            } catch (Throwable tr) {
-                LOGGER.e(tr, "retry failed");
-            }
-        }
+    static void sendBinderToManger(Binder binder, int userId) {
+        sendBinderToUserApp(binder, MANAGER_APPLICATION_ID, userId);
     }
 
-    static boolean sendBinderToUserApp(Binder binder, String packageName, int userId) {
+    static void sendBinderToUserApp(Binder binder, String packageName, int userId) {
+        sendBinderToUserApp(binder, packageName, userId, true);
+    }
+
+    static void sendBinderToUserApp(Binder binder, String packageName, int userId, boolean retry) {
         try {
             DeviceIdleControllerApis.addPowerSaveTempWhitelistApp(packageName, 30 * 1000, userId,
                     316/* PowerExemptionManager#REASON_SHELL */, "shell");
+            LOGGER.v("Add %d:%s to power save temp whitelist for 30s", userId, packageName);
         } catch (Throwable tr) {
             LOGGER.e(tr, "Failed to add %d:%s to power save temp whitelist", userId, packageName);
         }
@@ -589,11 +534,24 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             provider = ActivityManagerApis.getContentProviderExternal(name, userId, token, name);
             if (provider == null) {
                 LOGGER.e("provider is null %s %d", name, userId);
-                return false;
+                return;
             }
             if (!provider.asBinder().pingBinder()) {
                 LOGGER.e("provider is dead %s %d", name, userId);
-                return false;
+
+                if (retry) {
+                    // For unknown reason, sometimes this could happens
+                    // Kill Shizuku app and try again could work
+                    ActivityManagerApis.forceStopPackageNoThrow(packageName, userId);
+                    LOGGER.e("kill %s in user %d and try again", packageName, userId);
+                    Thread.sleep(1000);
+                    sendBinderToUserApp(binder, packageName, userId, false);
+                }
+                return;
+            }
+
+            if (!retry) {
+                LOGGER.e("retry works");
             }
 
             Bundle extra = new Bundle();
@@ -602,14 +560,11 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             Bundle reply = IContentProviderUtils.callCompat(provider, null, name, "sendBinder", null, extra);
             if (reply != null) {
                 LOGGER.i("send binder to user app %s in user %d", packageName, userId);
-                return true;
             } else {
                 LOGGER.w("failed to send binder to user app %s in user %d", packageName, userId);
-                return false;
             }
         } catch (Throwable tr) {
-            LOGGER.e(tr, "failed to send binder to user app %s in user %d", packageName, userId);
-            return false;
+            LOGGER.e(tr, "failed send binder to user app %s in user %d", packageName, userId);
         } finally {
             if (provider != null) {
                 try {
@@ -631,5 +586,10 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     @Override
     public boolean isHidden(int uid) throws RemoteException {
         return false;
+    }
+
+    @Override
+    public int[] getHiddenUids() throws RemoteException {
+        return new int[0];
     }
 }

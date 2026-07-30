@@ -3,11 +3,13 @@ package moe.shizuku.manager.utils
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.RemoteException
+import rikka.shizuku.common.util.InstalledPackagesCompat
+import rikka.hidden.compat.PackageManagerApis
 import rikka.hidden.compat.PermissionManagerApis
 import rikka.hidden.compat.UserManagerApis
 import rikka.hidden.compat.util.SystemServiceBinder
+import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
-import rikka.shizuku.server.util.InstalledPackagesCompat
 
 object ShizukuSystemApis {
 
@@ -20,7 +22,7 @@ object ShizukuSystemApis {
     private val users = arrayListOf<UserInfoCompat>()
 
     private fun getUsers(): List<UserInfoCompat> {
-        return if (!ShizukuStateMachine.isRunning()) {
+        return if (!Shizuku.pingBinder()) {
             arrayListOf(UserInfoCompat(UserHandleCompat.myUserId(), "Owner"))
         } else try {
             val list = UserManagerApis.getUsers(true, true, true)
@@ -52,19 +54,17 @@ object ShizukuSystemApis {
     }
 
     fun getInstalledPackages(flags: Long, userId: Int): List<PackageInfo> {
-        return if (!ShizukuStateMachine.isRunning()) {
+        return if (!Shizuku.pingBinder()) {
             ArrayList()
         } else try {
-            InstalledPackagesCompat.getInstalledPackages(flags, userId)
+            InstalledPackagesCompat.getInstalledPackagesNoThrow(flags, userId)
         } catch (tr: RemoteException) {
-            throw RuntimeException(tr.message, tr)
-        } catch (tr: ReflectiveOperationException) {
             throw RuntimeException(tr.message, tr)
         }
     }
 
     fun checkPermission(permName: String, pkgName: String, userId: Int): Int {
-        return if (!ShizukuStateMachine.isRunning()) {
+        return if (!Shizuku.pingBinder()) {
             PackageManager.PERMISSION_DENIED
         } else try {
             PermissionManagerApis.checkPermission(permName, pkgName, userId)
@@ -74,7 +74,7 @@ object ShizukuSystemApis {
     }
 
     fun grantRuntimePermission(packageName: String, permissionName: String, userId: Int) {
-        if (!ShizukuStateMachine.isRunning()) {
+        if (!Shizuku.pingBinder()) {
             return
         }
         try {
@@ -85,7 +85,7 @@ object ShizukuSystemApis {
     }
 
     fun revokeRuntimePermission(packageName: String, permissionName: String, userId: Int) {
-        if (!ShizukuStateMachine.isRunning()) {
+        if (!Shizuku.pingBinder()) {
             return
         }
         try {

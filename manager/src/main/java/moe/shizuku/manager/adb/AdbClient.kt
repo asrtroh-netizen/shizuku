@@ -14,7 +14,6 @@ import moe.shizuku.manager.adb.AdbProtocol.A_STLS
 import moe.shizuku.manager.adb.AdbProtocol.A_STLS_VERSION
 import moe.shizuku.manager.adb.AdbProtocol.A_VERSION
 import moe.shizuku.manager.adb.AdbProtocol.A_WRTE
-import moe.shizuku.manager.ktx.logd
 import rikka.core.util.BuildUtils
 import java.io.Closeable
 import java.io.DataInputStream
@@ -22,7 +21,6 @@ import java.io.DataOutputStream
 import java.net.Socket
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.net.InetSocketAddress
 import javax.net.ssl.SSLSocket
 
 private const val TAG = "AdbClient"
@@ -43,10 +41,7 @@ class AdbClient(private val host: String, private val port: Int, private val key
     private val outputStream get() = if (useTls) tlsOutputStream else plainOutputStream
 
     fun connect() {
-        val socket = Socket()
-        val address = InetSocketAddress(host, port)
-        socket.connect(address, 5000)
-
+        socket = Socket(host, port)
         socket.tcpNoDelay = true
         plainInputStream = DataInputStream(socket.getInputStream())
         plainOutputStream = DataOutputStream(socket.getOutputStream())
@@ -84,9 +79,9 @@ class AdbClient(private val host: String, private val port: Int, private val key
         if (message.command != A_CNXN) error("not A_CNXN")
     }
 
-    fun command(cmd: String, listener: ((ByteArray) -> Unit)? = null) {
+    fun shellCommand(command: String, listener: ((ByteArray) -> Unit)?) {
         val localId = 1
-        write(A_OPEN, localId, 0, cmd)
+        write(A_OPEN, localId, 0, "shell:$command")
 
         var message = read()
         when (message.command) {
@@ -113,6 +108,68 @@ class AdbClient(private val host: String, private val port: Int, private val key
             }
             else -> {
                 error("not A_OKAY or A_CLSE")
+            }
+        }
+    }
+
+    fun root(listener: ((ByteArray) -> Unit)?) {
+        val localId = 1
+        write(A_OPEN, localId, 0, "root:")
+
+        var message = read()
+        when (message.command) {
+            A_OKAY -> {
+                while (true) {
+                    message = read()
+                    val remoteId = message.arg0
+                    if (message.command == A_WRTE) {
+                        if (message.data_length > 0) {
+                            listener?.invoke(message.data!!)
+                        }
+                        write(A_OKAY, localId, remoteId)
+                    } else if (message.command == A_CLSE) {
+                        write(A_CLSE, localId, remoteId)
+                        break
+                    } else {
+                        error("not A_WRTE or A_CLSE")
+                    }
+                }
+            }
+
+            else -> {
+                Log.e(TAG, "not A_OKAY")
+                error("not A_OKAY")
+            }
+        }
+    }
+
+    fun tcpip(port: Int, listener: ((ByteArray) -> Unit)?) {
+        val localId = 1
+        write(A_OPEN, localId, 0, "tcpip:$port")
+
+        var message = read()
+        when (message.command) {
+            A_OKAY -> {
+                while (true) {
+                    message = read()
+                    val remoteId = message.arg0
+                    if (message.command == A_WRTE) {
+                        if (message.data_length > 0) {
+                            listener?.invoke(message.data!!)
+                        }
+                        write(A_OKAY, localId, remoteId)
+                    } else if (message.command == A_CLSE) {
+                        write(A_CLSE, localId, remoteId)
+                        break
+                    } else {
+                        error("not A_WRTE or A_CLSE")
+                    }
+                }
+            }
+
+            else -> {
+                Log.e(TAG, "not A_OKAY")
+                error("not A_OKAY")
             }
         }
     }

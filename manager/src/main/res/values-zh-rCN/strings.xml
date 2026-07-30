@@ -1,255 +1,120 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- To translators: you can leave your here -->
-    <!-- Home - Status -->
+    <string name="permission_label">使用 Shizuku</string>
+    <string name="permission_description">允许应用使用 Shizuku。</string>
     <string name="home_status_service_is_running">%1$s 正在运行</string>
-    <string name="home_status_service_not_running">%1$s未运行</string>
     <string name="home_status_service_version">版本 %2$s，%1$s</string>
     <string name="home_status_service_version_update"><![CDATA[版本 %2$s，%1$s<br>再次启动来升级到版本 %3$s]]></string>
-    <string name="home_status_tap_detail">点按查看状态详情</string>
-    <string name="home_status_detail_title">服务状态</string>
-    <string name="home_status_chip_mode">模式 · %1$s</string>
-    <string name="home_status_chip_version">版本 · %1$s</string>
-    <string name="home_status_chip_uid">UID · %1$s</string>
-    <string name="home_status_chip_wifi">Wi‑Fi · %1$s</string>
-    <string name="home_status_wifi_on">已连接</string>
-    <string name="home_status_wifi_off">未连接</string>
-    <string name="home_status_detail_body">状态：%1$s\n模式：%2$s\n版本：%3$s\nUID：%4$s\nWi‑Fi STA：%5$s\nADB 权限：%6$s\nTCP 模式：%7$s\n开机自启：%8$s</string>
-
-    <!-- 三态状态卡：未激活 / 激活中 / 就绪 -->
-    <string name="home_hero_eyebrow">服务</string>
-    <string name="home_hero_title_inactive">未激活</string>
-    <string name="home_hero_title_activating">激活中…</string>
-    <string name="home_hero_pill_inactive">未激活</string>
-    <string name="home_hero_pill_activating">激活中</string>
-    <string name="home_hero_pill_ready">Active</string>
-    <string name="home_hero_subtitle_inactive">Shizuku 服务未运行</string>
-    <string name="home_hero_subtitle_activating">正在启动服务…</string>
-    <string name="home_hero_detail_inactive">请用下方无线调试启动。请保持 Wi‑Fi 连接。</string>
-    <string name="home_hero_detail_activating">请稍候。解锁手机并保持 Wi‑Fi。</string>
-    <string name="home_hero_stage_inactive">未激活</string>
-    <string name="home_hero_stage_activating">激活中</string>
-    <string name="home_hero_stage_ready">已就绪</string>
-    <string name="home_hero_action_activate">立即激活</string>
-    <string name="home_hero_action_activating">激活中…</string>
-    <string name="home_hero_action_retry">重试启动</string>
-    <string name="home_hero_action_detail">查看详情</string>
-    <string name="home_hero_action_activate_sub">将走无线调试启动流程</string>
-    <string name="home_hero_action_retry_sub">清除卡住的启动状态并重试</string>
-
-    <!-- 检查页风格 2×2 -->
-    <string name="home_checks_title">检查</string>
-    <string name="home_checks_subtitle">点按卡片查看详情；除非你确认，不会改设置。</string>
-    <string name="home_checks_diag_title">服务诊断</string>
-    <string name="home_checks_diag_sub">运行状态、版本、Wi‑Fi</string>
-    <string name="home_checks_diag_detail">状态：%1$s\n版本：%2$s\nUID：%3$s\nWi‑Fi：%4$s\nADB 权限：%5$s\nTCP 模式：%6$s</string>
-    <string name="home_checks_apps_sub_waiting">请先启动 Shizuku</string>
-    <string name="home_checks_start_title">无线启动</string>
-    <string name="home_checks_start_sub">通过无线调试启动</string>
-    <string name="home_checks_start_detail">将使用无线调试（或 TCP）启动 Shizuku。首次可能需要配对。</string>
-    <string name="home_checks_boot_title">自启与看门狗</string>
-    <string name="home_checks_boot_sub">开机自启与保护状态</string>
-    <string name="home_quick_entry_title">快捷入口</string>
-    <string name="home_root_title_plain">Root 启动</string>
-    <string name="home_root_tile_confirm">用 Root 启动 / 重启 Shizuku？</string>
-    <string name="home_root_tile_unavailable">需要 Root</string>
-    <string name="home_root_tile_unavailable_detail">当前设备未 Root。请改用无线调试或电脑 ADB 启动。</string>
-    <string name="home_checks_adb_sub">电脑 ADB</string>
-    <string name="home_wireless_adb_title_plain">无线调试启动</string>
-    <string name="home_adb_title_plain">通过电脑启动（ADB）</string>
-    <string name="home_terminal_title_plain">终端</string>
-    <string name="home_adb_tile_title">电脑 ADB</string>
-    <string name="home_apps_tile_sub">已授权应用</string>
-    <string name="home_terminal_tile_sub">终端里用 Shizuku</string>
-
-    <string name="home_app_management_waiting_service">请先启动 Shizuku——服务未运行时授权列表会是空的。</string>
-    <string name="home_app_management_binder_unavailable">读不到授权应用（服务 binder 不可用）。请先启动/重启 Shizuku 再打开。</string>
-    <!-- Home - Adb -->
-    <string name="home_adb_title"><![CDATA[通过连接电脑启动（使用 adb）]]></string>
-    <string name="home_adb_description"><![CDATA[对于没有 root 的设备需要借助 adb 来启动 Shizuku（需要连接电脑）。这个过程每次设备重新启动后需要重新进行。请<b><a href=\"%1$s\">阅读帮助</a></b>。]]></string>
-    <string name="home_adb_button_view_help">阅读帮助</string>
-    <string name="home_adb_button_view_command">查看指令</string>
-    <string name="home_adb_dialog_view_command_message"><![CDATA[<font face="monospace">%1$s</font><br><br>* 还有一些其他注意事项，请确认你已阅读帮助。]]></string>
-    <string name="home_adb_dialog_view_command_copy_button">复制</string>
-    <string name="home_adb_dialog_view_command_button_send">发送</string>
-    <!-- Home - Wireless Adb -->
-    <string name="home_wireless_adb_title"><![CDATA[通过无线调试启动]]></string>
-    <string name="home_wireless_adb_description"><![CDATA[在 Android 11 或更高版本上，您可以直接从您的设备启用无线调试并启动 Shizuku，无需连接到计算机。<p>请先查看分步骤指南。]]></string>
-    <string name="home_wireless_adb_description_pre_11"><![CDATA[在 Android 11 之前，需要连接到计算机才能启用无线调试。]]></string>
-    <string name="home_wireless_adb_view_guide_button">分步骤指南</string>
-    <!-- Adb -->
-    <string name="dialog_adb_discovery">正在搜索无线调试服务</string>
-    <string name="dialog_adb_discovery_message">请在“开发者选项”中启用“无线调试”功能。当网络变化时“无线调试”会被自动禁用。
-        \n
-        \n注意：请不要禁用“开发者选项”或“USB 调试”，否则 Shizuku 会被停止。</string>
-    <string name="dialog_adb_discovery_message_toggle_wireless_debugging">如果一直搜索，请尝试禁用并启用“无线调试”。</string>
-    <string name="dialog_adb_port">端口号</string>
-    <string name="dialog_adb_invalid_port">端口号是一个 1 至 65535 的整数。</string>
-    <string name="adb_pairing">配对</string>
-    <string name="dialog_adb_pairing_title">与设备配对</string>
-    <string name="dialog_adb_pairing_discovery">正在搜索配对服务</string>
-    <string name="dialog_adb_pairing_paring_code">配对码</string>
-    <string name="paring_code_is_wrong">配对码错误。</string>
-    <string name="cannot_connect_port">无法连接到无线调试服务。\n\n请确保将 Shizuku 添加到所有防火墙、广告拦截器、VPN
-        或类似可能限制网络访问的应用程序中的白名单。</string>
-    <string name="dialog_wireless_adb_not_enabled">无线调试未启用。
-        \n请注意，在 Android 11 之前，要启用无线调试必须连接电脑。</string>
-    <string name="dialog_usb_debugging_not_enabled">USB调试未启用。\n请在“开发者选项”中启用它。</string>
-    <string name="dialog_adb_pairing_message">请按照以下步骤开始配对：\n- 打开“开发者选项”\n- 启用“USB调试”和“无线调试”\n-
-        点击“无线调试”左侧\n- 点击“使用配对码配对设备”\n- 在通知栏中输入配对码</string>
-    <string name="dialog_adb_pairing_accessibility_permission">在 Android 14上，安装/更新Shizuku 软件包安装程序撤销了
-        ^1 权限，这是启用配对辅助辅助功能所必需的。\n\n要授予它，请运行以下ADB 命令：\n\n^2\n\n运行命令后， 您可以继续配对。\n\n注意：您可以通过 ADB
-        安装/更新Shizuku 来绕过此操作。</string>
-    <string name="dialog_adb_pairing_accessibility_enable">请启用辅助功能服务以开始配对过程。这将使 Shizuku
-        能够检测到配对码。\n\n辅助功能服务将在找到配对码后或1分钟后关闭以节省电量。</string>
-    <string name="dialog_adb_pairing_accessibility_navigate">请按照以下步骤开始配对：\n- 进入“开发者选项”\n-
-        启用“USB调试”和“无线调试”\n- 点击“无线调试”左侧\n- 点击“使用配对码配对设备”。Shizuku 将自动检测配对码。</string>
-    <string name="adb_pairing_requires_multi_window">请先进入分屏（多窗口）模式。</string>
-    <string name="adb_pairing_requires_multi_window_reason">系统要求配对对话框始终可见。只有使用分屏模式才能让此应用和系统对话框同时可见。</string>
-    <string name="adb_error_key_store">无法生成无线调试密钥。\n这可能是因为此设备的密钥库机制已损坏。</string>
-    <string name="adb_stopping_tcp">关闭 TCP 端口</string>
-    <string name="adb_error_stop_tcp">通过 TCP 停止 ADB 失败</string>
-    <string name="adb_pair_required">请先进行配对步骤。</string>
-    <string name="enable">启用</string>
-    <string name="development_settings">开发者选项</string>
-    <string name="notification_settings">通知设置</string>
-    <string name="adb_pairing_tutorial_title">将 Shizuku 与您的设备配对</string>
-    <string name="adb_pairing_tutorial_content_notification">一条来自 Shizuku 的通知将帮助您完成配对。</string>
-    <string name="adb_pairing_tutorial_content_steps">进入“开发者选项”，然后启用“USB调试”和“无线调试”。</string>
-    <string name="adb_pairing_tutorial_content_enter_pairing_code">
-        点击“无线调试”左侧，然后点击“使用配对码配对设备”。输入通知中的代码以完成配对。</string>
-    <string name="adb_pairing_tutorial_content_notification_blocked">配对过程需要您与 Shizuku 的通知交互。请允许
-        Shizuku 发布通知。</string>
-    <string name="adb_pairing_tutorial_content_miui">MIUI
-        用户可能需要在系统设置中从“通知管理”-“通知显示设置”将通知样式切换为“原生样式”。</string>
-    <string name="adb_pairing_tutorial_content_miui_2">否则，您可能无法输入通知中的配对码。</string>
-    <string name="adb_pairing_tutorial_content_finish">回到 Shizuku 并启动 Shizuku。</string>
-    <string name="adb_pairing_tutorial_content_network">Shizuku 需要访问本地网络。这受网络权限控制。</string>
-    <string name="adb_pairing_tutorial_content_network_limation_not_foreground">某些系统（例如
-        MIUI）会禁止应用在不可见时访问网络，即使该应用使用了前台服务。请在这些系统上为 Shizuku 关闭电池优化功能。</string>
-    <!-- Home - Root -->
-    <string name="home_root_title"><![CDATA[启动（针对已 root 设备）]]></string>
-    <string name="home_root_description"><![CDATA[如果您正在使用 Magisk，可以尝试使用 %1$s。对于 root 用户，它最终会取代 Shizuku。请注意，现有应用程序需要稍作修改才能使用 %2$s。]]></string>
+    <string name="home_status_service_not_running">%1$s未运行</string>
     <string name="home_root_button_start">启动</string>
     <string name="home_root_button_restart">重新启动</string>
-    <!-- Home - Application management -->
+    <string name="home_root_title"><![CDATA[启动（针对已 root 设备）]]></string>
+    <string name="home_adb_title"><![CDATA[通过连接电脑启动（使用 adb）]]></string>
+    <string name="home_adb_description"><![CDATA[对于没有 root 的设备需要借助 adb 来启动 Shizuku（需要连接电脑）。这个过程每次设备重新启动后需要重新进行。请<b><a href=\"%1$s\">阅读帮助</a></b>。]]></string>
+    <string name="home_root_description"><![CDATA[另外，Shizuku 可以在开机时自动启动。如果没有，请检查您的系统或是第三方工具是否限制了 Shizuku。<br>你可以参考 %s。]]></string>
+    <string name="home_adb_dialog_view_command_copy_button">复制</string>
+    <string name="home_adb_dialog_view_command_button_send">发送</string>
+    <string name="home_adb_button_view_command">查看指令</string>
+    <string name="home_adb_dialog_view_command_message"><![CDATA[<font face="monospace">%1$s</font><br><br>* 还有一些其他注意事项，请确认你已阅读帮助。]]></string>
+    <string name="dialog_legacy_not_support_title">%1$s 不支持现代 Shizuku</string>
+    <string name="dialog_legacy_not_support_message"><![CDATA[旧式 Shizuku 已于 2019 年 3 月被弃用。此外，旧式 Shizuku 无法在较新版本的 Android 系统上工作。<p>请要求 <b>%1$s</b> 的开发者进行更新。]]></string>
+    <string name="dialog_requesting_legacy_title">%1$s 正在请求旧式 Shizuku</string>
+    <string name="dialog_requesting_legacy_message"><![CDATA[<b>%1$s</b> 支持现代 Shizuku，但它正在请求旧式 Shizuku。这可能是因为 Shizuku 没有运行，请在 Shizuku 应用内检查。<p>旧式 Shizuku 已于 2019 年 3 月被弃用。]]></string>
     <string name="home_app_management_title">应用管理</string>
     <plurals name="home_app_management_authorized_apps_count">
         <item quantity="other"><![CDATA[已授权 %d 个应用]]></item>
     </plurals>
-    <string name="home_app_management_view_authorized_apps"><![CDATA[点按以管理授权的应用]]></string>
-    <string name="home_app_management_empty">已请求或声明 Shizuku 权限的应用将显示在此处。</string>
-    <!-- Home - Automation -->
-    <string name="home_automation_title">使用自动化应用程序控制 Shizuku</string>
-    <string name="home_automation_description">Tasker 和 MacroDroid 等应用可以发送 Intent 来自动启动/停止 Shizuku。</string>
-    <string name="home_automation_button_view_intents">查看意图</string>
-    <string name="home_automation_dialog_label_action">动作</string>
-    <string name="home_automation_dialog_label_package">包名</string>
-    <string name="home_automation_dialog_label_class">类名</string>
-    <string name="home_automation_dialog_label_target">目标</string>
-    <!-- Home - Learn more -->
-    <string name="home_learn_more_title">开发者指南</string>
-    <string name="home_learn_more_description">了解如何使用 Shizuku 开发</string>
-    <!-- Home - Adb permissions limited -->
-    <string name="home_adb_is_limited_title">您需要进行额外的步骤</string>
-    <string name="home_adb_is_limited_description">您的设备制造商限制了 adb 的权限，使用 Shizuku
-        的应用无法正常工作。\n\n通常，在“开发者选项”中调整一些选项即可解除此限制。请阅读帮助来了解具体的操作方式。\n\n您可能需要重新启动 Shizuku 以使操作生效。</string>
-    <!-- Application management -->
-    <string name="app_management_dialog_adb_is_limited_title">adb 权限受限</string>
-    <string name="app_management_dialog_adb_is_limited_message"><![CDATA[这极有可能是你的设备制造商限制了 adb 的权限。<p><b><a href="%1$s">此文档</a></b>中可能有针对你的系统的解决方案。]]></string>
-    <string name="app_management_item_summary_requires_root">* 需要以 root 执行的 Shizuku</string>
-    <string name="app_management_toggle_all">切换全部</string>
-    <!-- Terminal -->
-    <string name="home_terminal_title">在终端应用中使用 Shizuku</string>
-    <string name="home_terminal_description">通过 Shizuku 在终端应用程序中运行 shell 命令</string>
-    <string name="terminal_tutorial_miui">用户反映 MIUI 破坏了导出功能所使用的存储访问框架。</string>
-    <string name="terminal_tutorial_miui_2">如果您使用的是 MIUI 系统，则可能需要从 Shizuku 的 APK 的 assets 文件夹中提取该文件。</string>
-    <string name="terminal_tutorial_1">将文件导出到新文件夹。</string>
-    <string name="terminal_tutorial_1_description">将导出两个文件： %1$s 和 %2$s。如果所选文件夹中已存在这些文件，则会将其删除。</string>
-    <string name="terminal_export_files">导出文件</string>
-    <string name="terminal_tutorial_2">使用终端应用程序将文件复制到其私有文件目录。</string>
-    <string name="terminal_tutorial_2_description">提示：如果你的终端应用程序的主目录（~）位于私有文件目录中，将文件放在那里就可以直接运行 %1$s
-        而无需输入路径。\n\n否则，你可以在终端应用程序的 %3$s 配置文件中为 %2$s 创建一个别名。</string>
-    <string name="terminal_tutorial_3">使用以下命令打开 shell：</string>
-    <string name="rish_description"><![CDATA[使用 %1$s，您可以在任何终端应用程序中运行 shell 命令。<p>点击了解更多使用方法。]]></string>
-    <!-- Settings -->
-    <string name="settings_title">设置</string>
-    <string name="settings_behavior">行为</string>
-    <string name="settings_start_on_boot">自启动</string>
-    <string name="settings_start_on_boot_summary">需要 Android 11 或更高版本或 root 权限</string>
-    <string name="settings_start_on_boot_bug">由于 Android 11-12
-        中的一个漏洞，无线调试不会记住任何授权网络。\n\n每次重启时，当授权对话框弹出时，点击“允许”重新授权网络。</string>
-    <string name="settings_use_system_color">使用系统主题颜色</string>
-    <string name="settings_watchdog">Watchdog</string>
-    <string name="settings_watchdog_summary">如果 Shizuku 崩溃，则自动重启</string>
-    <string name="settings_tcp_mode">TCP 模式</string>
-    <string name="settings_tcp_mode_summary">"允许 Shizuku 在没有 Wi-Fi 的情况下重启。（Shizuku 必须在重启后启动过一次）"</string>
-    <string name="settings_tcp_mode_dialog_close_port">"TCP 端口将立即关闭。您需要连接 Wi-Fi 才能重新启用 TCP 模式。是否继续？"</string>
-    <string name="settings_tcp_mode_closing_port">正在关闭 TCP 端口...</string>
-    <string name="settings_restart_dialog_title">需要重启</string>
-    <string name="settings_restart_dialog_message">Shizuku 需要重启才能应用此设置。</string>
-    <string name="settings_restart_dialog_message_wifi_required"><![CDATA[<br><br><b>需要 Wi-Fi。Shizuku 会在后台继续运行并等待 Wi-Fi 连接，连接成功后才会重启。</b>]]></string>
-    <string name="settings_tcp_port">TCP 端口</string>
-    <string name="settings_tcp_port_default">默认值 (5555)</string>
-    <string name="settings_tcp_port_hint">留空则使用默认值(5555)</string>
-    <string name="settings_tcp_learn_more">了解更多关于如何使用自动化应用程序控制 Shizuku 的信息</string>
-    <string name="settings_language">语言</string>
-    <string name="settings_translation_contributors">翻译贡献者</string>
-    <string name="settings_translation">参与翻译</string>
-    <string name="settings_translation_summary">帮助我们将 %s 翻译至您的语言</string>
-    <string name="settings_user_interface">界面外观</string>
-    <string name="settings_black_night_theme">黑色夜间主题</string>
-    <string name="settings_black_night_theme_summary">当夜间模式启用时使用纯黑色主题</string>
-    <string name="settings_support">支持</string>
-    <string name="settings_help">帮助</string>
-    <string name="settings_report_bug">报告错误</string>
-    <string name="settings_advanced">高级</string>
-    <string name="settings_legacy_pairing">传统配对</string>
-    <string name="settings_legacy_pairing_summary">在对话框中输入配对码，而不是在通知中输入</string>
-    <string name="settings_auto_pairing_notification">自动读取配对码</string>
-    <string name="settings_auto_pairing_notification_summary">从系统「设置」通知里读取 6 位配对码（需开启通知使用权）</string>
-    <string name="settings_auto_pairing_notification_open_failed">无法打开通知使用权设置</string>
-    <!-- Bug Report Dialog -->
-    <string name="bug_report_dialog_before_reporting">首先，请执行以下操作：</string>
-    <string name="bug_report_dialog_update">请检查您是否正在使用^1。</string>
-    <string name="bug_report_dialog_link_update">最新版本</string>
-    <string name="bug_report_dialog_wiki">阅读^1并遵循所有相关故障排除步骤。</string>
-    <string name="bug_report_dialog_link_wiki">维基</string>
-    <string name="bug_report_dialog_issues">在所有 ^1 中进行搜索，以查看您的bug是否已经被报告。</string>
-    <string name="bug_report_dialog_link_issues">现有问题</string>
-    <string name="bug_report_dialog_method">如果您有账号，请在^1上提交问题。</string>
-    <string name="bug_report_dialog_method_2">否则，您可以通过发送电子邮件的方式。</string>
-    <string name="bug_report_dialog_button_email">电子邮件</string>
-    <!-- Snackbar -->
-    <string name="snackbar_invalid_port">端口必须介于 1 和 65535 之间</string>
-    <string name="snackbar_battery_optimization_home">要使 开机启动/watchdog 功能正常工作，必须禁用电池优化。</string>
-    <string name="snackbar_battery_optimization_settings">请禁用电池优化功能以使用此功能。</string>
-    <string name="snackbar_action_fix">修复</string>
-    <!-- Toast -->
-    <string name="toast_no_email_app">未找到电子邮件应用</string>
-    <string name="toast_shizuku_already_starting">Shizuku 已在后台启动</string>
-    <string name="toast_accessibility_tv_only">该服务仅支持电视设备</string>
-    <string name="toast_pairing_timeout">Shizuku配对服务超时</string>
-    <!-- Dark Mode Setting Override -->
-    <string name="dark_theme">主题</string>
-    <string name="dark_theme_off">浅色主题</string>
-    <string name="dark_theme_on">深色主题</string>
-    <string name="follow_system">跟随系统</string>
-    <!-- About -->
+    <string name="home_app_management_view_authorized_apps">点按以管理授权的应用</string>
+    <string name="toast_copied_to_clipboard">%s\n已被复制到剪贴板。</string>
+    <string name="dialog_requesting_legacy_button_open_shizuku">打开 Shizuku</string>
     <string name="action_about">关于</string>
-    <string name="about_dialog_button_close">关闭</string>
     <string name="about_view_source_code"><![CDATA[在 %s 查看源码]]></string>
-    <!-- Start -->
-    <string name="action_start">启动 Shizuku</string>
-    <!-- Stop -->
-    <string name="action_stop">停止 Shizuku</string>
-    <string name="dialog_stop_message">Shizuku 服务将被停止。</string>
-    <!-- Notification -->
+    <string name="about_follow_channel"><![CDATA[在 GitHub 查看更新]]></string>
+    <string name="settings_title">设置</string>
+    <string name="start_with_root_failed">未授予 root 权限或是该设备没有 root，因此无法启动服务。</string>
     <string name="notification_channel_service_status">服务启动状态</string>
     <string name="notification_service_starting">Shizuku 服务正在启动…</string>
     <string name="notification_service_start_failed">启动 Shizuku 服务失败。</string>
     <string name="notification_service_start_no_root">请求 root 权限失败。</string>
     <string name="notification_working">工作中…</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_user_interface">界面外观</string>
+    <string name="settings_black_night_theme">黑色夜间主题</string>
+    <string name="settings_black_night_theme_summary">当夜间模式启用时使用纯黑色主题</string>
+    <string name="settings_startup">启动</string>
+    <string name="app_management_dialog_adb_is_limited_title">adb 权限受限</string>
+    <string name="app_management_dialog_adb_is_limited_message">这极有可能是你的设备制造商限制了 adb 的权限。&lt;p&gt;&lt;b&gt;&lt;a href=\"%1$s\"&gt;此文档&lt;/a&gt;&lt;/b&gt;中可能有针对你的系统的解决方案。</string>
+    <string name="home_adb_button_view_help">阅读帮助</string>
+    <string name="dialog_cannot_open_browser_title">无法启动浏览器</string>
+    <string name="toast_copied_to_clipboard_with_text"><![CDATA[<b>%s</b> 已被复制到剪贴板。]]></string>
+    <string name="home_learn_more_title">了解 Shizuku</string>
+    <string name="home_learn_more_description">了解如何使用 Shizuku 开发</string>
+    <string name="app_management_item_summary_requires_root">* 需要以 root 执行的 Shizuku</string>
+    <string name="settings_translation_contributors">翻译贡献者</string>
+    <string name="translation_contributors"/>
+    <string name="settings_translation">参与翻译</string>
+    <string name="settings_translation_summary">帮助我们将 %s 翻译至您的语言</string>
+    <string name="dialog_adb_port">端口号</string>
+    <string name="adb_pairing">配对</string>
+    <string name="dialog_adb_pairing_title">与设备配对</string>
+    <string name="dialog_adb_pairing_paring_code">配对码</string>
+    <string name="starter">启动程序</string>
+    <string name="dialog_adb_invalid_port">端口号是一个 10 至 65535 的整数。</string>
+    <string name="home_wireless_adb_title"><![CDATA[通过无线调试启动]]></string>
+    <string name="home_wireless_adb_description"><![CDATA[在 Android 11 或更高版本上，您可以直接从您的设备启用无线调试并启动 Shizuku，无需连接到计算机。<p>如果已授予 WRITE_SECURE_SETTINGS 权限，那么在无线调试可用或存在可连接的 TCP ADB 端口时，Shizuku 也可以在未 root 的情况下开机自动重启。<p>请先查看分步骤指南。]]></string>
+    <string name="action_stop">停止 Shizuku</string>
+    <string name="dialog_stop_message">Shizuku 服务将被停止。</string>
+    <string name="paring_code_is_wrong">配对码错误。</string>
+    <string name="cannot_connect_port">无法连接至无线调试服务。</string>
+    <string name="adb_pairing_requires_multi_window">请先进入分屏（多窗口）模式。</string>
+    <string name="adb_error_key_store">无法为无线调试生成密钥。\n这可能是因为此设备上的 KeyStore 机制已损坏。</string>
+    <string name="adb_pair_required">请先进行配对步骤。</string>
+    <string name="adb_pairing_requires_multi_window_reason">系统要求配对对话框始终可见，使用分屏模式是使此应用和系统对话框同时可见的唯一方法。</string>
+    <string name="dialog_adb_discovery">正在搜索无线调试服务</string>
+    <string name="dialog_adb_discovery_message">请在“开发者选项”中启用“无线调试”功能。当网络变化时“无线调试”会被自动禁用。
+\n
+\n注意：请不要禁用“开发者选项”或“USB 调试”，否则 Shizuku 会被停止。</string>
+    <string name="dialog_adb_discovery_message_toggle_wireless_debugging">如果一直搜索，请尝试禁用并启用“无线调试”。</string>
+    <string name="dialog_adb_pairing_discovery">正在搜索配对服务</string>
+    <string name="dialog_wireless_adb_not_enabled">无线调试未启用。
+\n请注意，在 Android 11 之前，要启用无线调试必须连接电脑。</string>
+    <string name="dialog_adb_pairing_message">请跟随下面的步骤开始配对：“开发者选项” - “无线调试” - “使用配对码配对设备”。
+\n
+\n配对过程开始后，您将能够输入配对码。</string>
+    <string name="development_settings">开发者选项</string>
+    <string name="home_root_description_sui"><![CDATA[如果您正在使用 Magisk，可以尝试 %1$s。对于 root 用户，它将最终取代 Shizuku。注意，已有的应用需要一点点修改来使用 %2$s。]]></string>
+    <string name="settings_start_on_boot">开机启动（Root）</string>
+    <string name="settings_start_on_boot_summary">已 Root 设备：开机用 Root 自动拉起 Shizuku（与无线调试开机互斥；默认关）</string>
+    <string name="settings_start_on_boot_wireless">连接 Wi-Fi 时自动启动（无线调试）</string>
+    <string name="settings_start_on_boot_wireless_summary">当连接到 Wi-Fi 时自动启动 Shizuku。需要 WRITE_SECURE_SETTINGS 权限。</string>
+    <string name="settings_auto_pairing">自动配对</string>
+    <string name="settings_auto_pairing_summary">自动从通知中获取配对码</string>
+    <string name="auto_pairing_notification_access_tooltip">自动配对需要“通知使用权”来从系统设置中获取配对码。</string>
+    <string name="settings_adb_root">ADB root（root 调试）</string>
+    <string name="settings_adb_root_summary">对于以 userdebug 模式构建的系统，Shizuku 可以先将 adbd 重启到 root 模式，然后以 root 模式启动</string>
+    <string name="settings_tcpip_port">TCP/IP 端口</string>
+    <string name="settings_tcpip_port_summary">在通过无线调试启动后，更改 adbd 的 TCP/IP 监听端口\n点击编辑，留空则视为禁用</string>
+    <string name="permission_warning_template"><![CDATA[要允许<b>%1$s</b>%2$s吗？]]></string>
+    <string name="grant_dialog_button_allow_always">始终允许</string>
+    <string name="grant_dialog_button_allow_once">允许一次</string>
+    <string name="grant_dialog_button_deny">拒绝</string>
+    <string name="home_terminal_title">在终端应用中使用 Shizuku</string>
+    <string name="home_terminal_description">在您喜欢的终端应用中通过 Shizuku 运行命令</string>
+    <string name="terminal_tutorial_1">首先，将文件导出到任何您想要的位置。您将找到两个文件，%1$s 和 %2$s。</string>
+    <string name="terminal_tutorial_1_description">若选择的文件夹中已有同名文件，它们会被删除。\n\n导出功能使用 SAF（Storage Access Framework）。有报告称 MIUI 破坏了 SAF 的功能，如果您使用 MIUI，您可能需要从 Shizuku 的 apk 中提取文件，或是从 GitHub 下载文件。</string>
+    <string name="terminal_export_files">导出文件</string>
+    <string name="terminal_tutorial_2">然后，使用任意文本编辑器打开并编辑 %1$s。</string>
+    <string name="terminal_tutorial_2_description">例如，如果要在 %1$s 中使用 Shizuku，则应将 %2$s 替换为 %3$s（%4$s 是 %1$s 的软件包名称）。</string>
+    <string name="terminal_tutorial_3">最后，将文件移动到终端应用可以访问的位置，您便可使用 %1$s 来通过 Shizuku 运行命令。</string>
+    <string name="terminal_tutorial_3_description">一些技巧：将执行权限授予 %1$s 并将其添加到 %2$s，您将可以直接使用 %1$s。</string>
+    <string name="rish_description"><![CDATA[
+通过 %1$s，您可以在任何终端应用中连接到由 Shizuku 运行的 shell 并与之交互。
+<p>有关 %1$s 的具体使用方式，点按以阅读文档。
+]]></string>
+    <string name="adb_pairing_tutorial_title">将 Shizuku 与您的设备配对</string>
+    <string name="adb_pairing_tutorial_content_steps">进入“开发者选项”-“无线调试”。点按“使用配对码配对设备”，您将看到一个六位数字代码。</string>
+    <string name="adb_pairing_tutorial_content_enter_pairing_code">在通知中输入代码来完成配对。</string>
+    <string name="adb_pairing_tutorial_content_finish">返回到 Shizuku 并启动 Shizuku。</string>
     <string name="notification_channel_adb_pairing">无线调试配对</string>
     <string name="notification_adb_pairing_input_paring_code">输入配对码</string>
     <string name="notification_adb_pairing_searching_for_service_title">正在搜索配对服务</string>
@@ -257,46 +122,100 @@
     <string name="notification_adb_pairing_stop_searching">停止搜索</string>
     <string name="notification_adb_pairing_working_title">正在进行配对</string>
     <string name="notification_adb_pairing_succeed_title">配对成功</string>
-    <string name="notification_adb_pairing_succeed_text">点「启动」立即拉起 Shizuku。</string>
-    <string name="notification_adb_pairing_succeed_starting">配对成功，正在启动 Shizuku…</string>
+    <string name="notification_adb_pairing_succeed_text">您现在可以启动 Shizuku 服务了。</string>
     <string name="notification_adb_pairing_failed_title">配对失败</string>
     <string name="notification_adb_pairing_retry">重试</string>
-    <!-- Permission related, appears in system permission UI -->
-    <string name="permission_label">使用 Shizuku</string>
-    <string name="permission_description">允许应用使用 Shizuku。</string>
-    <string name="permission_warning_template"><![CDATA[要允许<b>%1$s</b>%2$s吗？]]></string>
-    <string name="grant_dialog_button_allow_always">始终允许</string>
-    <string name="grant_dialog_button_deny">"拒绝"</string>
-    <!-- Starter -->
-    <string name="starter">启动程序</string>
-    <string name="start_with_root_failed">未授予 root 权限或是该设备没有 root，因此无法启动服务。</string>
-    <!-- WADB Starter -->
-    <string name="wadb_notification_title">正在启动 Shizuku…</string>
-    <string name="boot_adb_starting">开机后正在启动 Shizuku…</string>
-    <string name="wadb_notification_wifi_required">正在等待 Wi-Fi 连接，连接成功后才能继续</string>
-    <string name="wadb_notification_retry">等待重试</string>
-    <string name="wadb_error_title">在系统启动时启动出现错误</string>
-    <string name="wadb_error_notify_dev">点击通知开发者。</string>
-    <string name="wadb_permission_error_notification_title">权限错误</string>
-    <string name="wadb_permission_error_notification_content">Shizuku 需要 WRITE_SECURE_SETTINGS
-        权限才能开机启动。点击了解如何授予此权限。</string>
-    <string name="wadb_notification_channel">ADB 自动启动服务</string>
-    <!-- Watchdog -->
-    <string name="watchdog_running">Watchdog 正在运行</string>
-    <string name="watchdog_turn_off">关</string>
-    <string name="watchdog_shizuku_crashed_title">Shizuku 最近崩溃了</string>
-    <string name="watchdog_shizuku_crashed_text">Watchdog 已重启服务。点击了解可防止未来崩溃的潜在修复方案。</string>
-    <string name="watchdog_shizuku_crashed_action_turn_off_alerts">关闭提醒</string>
-    <!-- Misc -->
-    <string name="dialog_cannot_open_browser_title">无法启动浏览器</string>
-    <string name="toast_copied_to_clipboard">已复制到剪贴板</string>
-    <string name="accessibility_service_description">为无法使用通知或分屏功能的设备（例如，运行 Android 14
-        及更高版本的电视）提供配对支持。\n\n使 Shizuku 能够从无线调试配对屏幕中提取配对码。找到配对码后，它将自动禁用。</string>
-    <!-- Messages for legacy -->
-    <string name="dialog_legacy_not_support_title">%1$s 不支持现代 Shizuku</string>
-    <string name="dialog_legacy_not_support_message"><![CDATA[旧式 Shizuku 已于 2019 年 3 月被弃用。此外，旧式 Shizuku 无法在较新版本的 Android 系统上工作。<p>请要求 <b>%1$s</b> 的开发者进行更新。]]></string>
-    <string name="dialog_requesting_legacy_title">%1$s 正在请求旧式 Shizuku</string>
-    <string name="dialog_requesting_legacy_message"><![CDATA[<b>%1$s</b> 支持现代 Shizuku，但它正在请求旧式 Shizuku。这可能是因为 Shizuku 没有运行，请在 Shizuku 应用内检查。<p>旧式 Shizuku 已于 2019 年 3 月被弃用。]]></string>
-    <string name="dialog_requesting_legacy_button_open_shizuku">打开 Shizuku</string>
-    <string name="wadb_notification_attempt_now">现在尝试</string>
+    <string name="adb_pairing_tutorial_content_notification_blocked">配对过程需要您与 Shizuku 的通知交互。请允许 Shizuku 发布通知。</string>
+    <string name="notification_settings">通知设置</string>
+    <string name="adb_pairing_tutorial_content_miui">MIUI 用户可能需要在系统设置中从“通知管理”-“通知显示设置”将通知样式切换为“原生样式”。</string>
+    <string name="adb_pairing_tutorial_content_miui_2">否则，您可能会无法从通知输入配对码。</string>
+    <string name="adb_pairing_tutorial_content_notification">一条来自 Shizuku 的通知将帮助您完成配对。</string>
+    <string name="adb_pairing_tutorial_content_left_is_clickable">请注意，“无线调试”选项的左侧是可点击的，点按它将打开一个新的页面。仅打开右侧的开关是错误的。</string>
+    <string name="home_wireless_adb_description_pre_11"><![CDATA[在 Android 11 之前，通常需要连接到计算机才能启用无线调试。如果已经配置并可连接 TCP ADB，Shizuku 仍然可以在没有 Wi-Fi 的情况下重启。]]></string>
+    <string name="home_wireless_adb_view_guide_button">分步骤指南</string>
+    <string name="adb_pairing_tutorial_content_network">Shizuku 需要访问本地网络。它由网络权限控制。</string>
+    <string name="adb_pairing_tutorial_content_network_limation_not_foreground">某些系统（例如 MIUI）不允许应用在不可见时访问网络，即使应用已按标准使用前台服务。请在此类系统上为 Shizuku 禁用电池优化功能。</string>
+    <string name="adb_pairing_tutorial_content_network_blocked">配对过程需要访问本地网络以发现配对服务。请允许 Shizuku 访问本地网络。</string>
+    <string name="adb_pairing_tutorial_content_pairing_service_failed">无法启动配对服务。请重试。</string>
+    <string name="action_retry">重试</string>
+    <string name="settings_use_system_color">使用系统主题颜色</string>
+    <string name="home_app_management_empty">已请求或声明 Shizuku 的应用程序将显示在此处。</string>
+    <string name="home_adb_is_limited_title">您需要进行额外的步骤</string>
+    <string name="home_adb_is_limited_description">您的设备制造商限制了 adb 的权限，使用 Shizuku 的应用无法正常工作。\n\n通常，在“开发者选项”中调整一些选项即可解除此限制。请阅读帮助来了解具体的操作方式。\n\n您可能需要重新启动 Shizuku 以使操作生效。</string>
+    <string name="cancel">取消</string>
+    <string name="manual">手动</string>
+    <string name="auto">自动</string>
+    <string name="app_name">Shizuku</string>
+    <string name="home_hero_eyebrow">服务</string>
+    <string name="home_hero_title_inactive">未激活</string>
+    <string name="home_hero_pill_inactive">未激活</string>
+    <string name="home_hero_pill_ready">Active</string>
+    <string name="home_hero_subtitle_inactive">Shizuku 服务未运行</string>
+    <string name="home_hero_detail_inactive">请用下方无线调试启动。请保持 Wi‑Fi 连接。</string>
+    <string name="home_hero_stage_inactive">未激活</string>
+    <string name="home_hero_stage_ready">已就绪</string>
+    <string name="home_quick_entry_title">快捷入口</string>
+    <string name="home_root_title_plain">Root 启动</string>
+    <string name="home_root_tile_confirm">用 Root 启动 / 重启 Shizuku？</string>
+    <string name="home_root_tile_unavailable">需要 Root</string>
+    <string name="home_root_tile_unavailable_detail">当前设备未 Root。请改用无线调试或电脑 ADB 启动。</string>
+    <string name="home_checks_apps_sub_waiting">请先启动 Shizuku</string>
+    <string name="home_checks_adb_sub">电脑 ADB</string>
+    <string name="home_checks_start_sub">通过无线调试启动</string>
+    <string name="home_terminal_title_plain">终端</string>
+    <string name="home_adb_tile_title">电脑 ADB</string>
+    <string name="home_terminal_tile_sub">终端里用 Shizuku</string>
+    <string name="home_app_management_binder_unavailable">读不到授权应用（服务 binder 不可用）。请先启动/重启 Shizuku 再打开。</string>
+    <string name="home_wireless_adb_title_plain">无线调试启动</string>
+    <string name="home_capsule_boot">开机启动</string>
+    <string name="home_boot_configure">配置</string>
+    <string name="home_capsule_theme">主题</string>
+    <string name="home_theme_light">白色</string>
+    <string name="home_theme_dark">黑暗</string>
+    <string name="home_check_update">检查更新</string>
+    <string name="home_checking_update">检查中…</string>
+    <string name="update_downloading">正在下载更新…</string>
+    <string name="update_download_started">开始下载 v%1$s，完成后将自动拉起安装</string>
+    <string name="update_http_fail">检查更新失败：HTTP %1$d</string>
+    <string name="update_net_fail">检查更新失败：%1$s</string>
+    <string name="update_net_exception">网络异常</string>
+    <string name="update_no_version">未解析到版本信息</string>
+    <string name="update_found">发现新版本 %1$s（当前 %2$s）</string>
+    <string name="update_found_no_apk">发现新版本 %1$s，但该 Release 未附带 APK</string>
+    <string name="update_latest">已是最新版本（%1$s）</string>
+    <string name="action_download_install">下载并安装</string>
+    <string name="home_automation_title">使用自动化应用程序控制 Shizuku</string>
+    <string name="home_automation_description">Tasker 和 MacroDroid 等应用可以发送 Intent 来自动启动/停止 Shizuku。</string>
+    <string name="home_automation_button_view_intents">查看意图</string>
+    <string name="home_stealth_title">对其他应用隐藏 Shizuku</string>
+    <string name="home_stealth_description">注意：启用此功能可能导致依赖 Shizuku 的应用无法正常工作。</string>
+    <string name="action_open">打开</string>
+    <string name="action_back">返回</string>
+    <string name="more_options">更多选项</string>
+    <string name="service_user_root">root</string>
+    <string name="service_user_adb">adb</string>
+    <string name="home_status_compose_not_running_summary">重新连接以恢复特权访问。</string>
+    <string name="settings_language_system">跟随系统</string>
+    <string name="settings_use_system_color_summary">可用时跟随 Material You 动态颜色。</string>
+    <string name="settings_tcpip_port_disabled">已禁用</string>
+    <string name="settings_translation_contributors_fallback">由社区维护</string>
+    <string name="permission_group_label">Shizuku</string>
+    <string name="permission_group_description">@string/permission_label</string>
+    <string name="permission_write_secure_settings_required">此功能需要 WRITE_SECURE_SETTINGS 权限</string>
+    <string name="permission_write_secure_settings_grant_info">可以通过 ADB 使用以下命令授予此权限：\nadb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS</string>
+    <string name="permission_missing">需要权限</string>
+    <string name="permission_disabled_feature">由于缺少权限，功能已停用</string>
+    <string name="wireless_boot_permission_tooltip">若要在开机时通过无线 ADB 自动启动 Shizuku，必须授予 WRITE_SECURE_SETTINGS 权限</string>
+    <string name="wireless_boot_wifi_required">此功能需要连接 Wi-Fi 才能工作</string>
+    <string name="wireless_boot_component_error">启用开机组件失败</string>
+    <string name="wireless_boot_enabled">无线 ADB 自动启动已启用</string>
+    <string name="starting_on_wireless_adb">正在通过无线 ADB 启动服务…</string>
+    <string name="starting_root_shell">正在启动 root shell…</string>
+    <string name="start_service_timeout">Shizuku 服务未及时响应。请尝试重新启动。</string>
+    <string name="settings_grant_note"><![CDATA[<h1>注意</h1>\n<p>此功能需要 <u><tt>WRITE_SECURE_SETTINGS</tt></u> 权限。</p>\n<h1>警告</h1>\n<p><u><tt>WRITE_SECURE_SETTINGS</tt></u> 是高度敏感的权限，仅在明确操作风险时启用。后续可能产生的任何后果均由用户自行承担。</p>]]></string>
+    <string name="settings_watchdog_adb">ADB/TCP 守护</string>
+    <string name="settings_watchdog_adb_summary">在通过 ADB/TCP 启动后监控 Shizuku；若服务被杀死，则最多自动重启 5 次</string>
+    <string name="notification_channel_watchdog">守护状态</string>
+    <string name="notification_watchdog_title">Shizuku 守护已启用</string>
+    <string name="notification_watchdog_content">如果 ADB/TCP 启动的 Shizuku 服务被杀死，将自动尝试重启</string>
 </resources>

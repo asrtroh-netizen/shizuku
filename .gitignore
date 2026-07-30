@@ -5,15 +5,10 @@
 /.idea/libraries
 .DS_Store
 /build
-**/build/
-*.apk
-*.aab
 /captures
 .externalNativeBuild
-**/.cxx/
 /.idea
 /manager/signing.properties
 /out
 /signing.properties
-/.kotlin
-*.zip
+key.jks

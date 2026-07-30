@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Material blue accent (independent of OneIms product branding) -->
+    <!-- Library Shizuku (thedjchi V15) accent -->
     <color name="notification">#0B57D0</color>
 
     <color name="app_color_light">#0B57D0</color>
     <color name="app_color_dark">#A9C7FF</color>
+
+    <!-- Library hero status -->
+    <color name="hero_inactive_bg">#F9DEDC</color>
+    <color name="hero_inactive_fg">#410E0B</color>
+    <color name="hero_activating_bg">#D3E3FD</color>
+    <color name="hero_activating_fg">#041E49</color>
+    <color name="hero_ready_bg">#FFFFFF</color>
+    <color name="hero_ready_fg">#1A1B20</color>
 </resources>

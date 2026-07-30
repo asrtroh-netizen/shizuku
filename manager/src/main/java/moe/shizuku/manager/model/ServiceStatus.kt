@@ -1,6 +1,6 @@
 package moe.shizuku.manager.model
 
-import moe.shizuku.manager.utils.ShizukuStateMachine
+import rikka.shizuku.Shizuku
 
 data class ServiceStatus(
         val uid: Int = -1,
@@ -10,5 +10,14 @@ data class ServiceStatus(
         val permission: Boolean = false
 ) {
     val isRunning: Boolean
-        get() = uid != -1 && ShizukuStateMachine.isRunning()
+        get() = uid != -1 && Shizuku.pingBinder()
+
+    val versionName: String
+        get() {
+            val patch = if (patchVersion >= 0) patchVersion else 6
+            return "$apiVersion.$patch"
+        }
+
+    val hasCompleteVersion: Boolean
+        get() = apiVersion >= 0
 }

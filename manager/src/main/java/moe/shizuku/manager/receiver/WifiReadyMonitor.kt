@@ -8,15 +8,14 @@ import android.net.NetworkRequest
 import android.util.Log
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.ShizukuSettings
-import moe.shizuku.manager.utils.EnvironmentUtils
-import moe.shizuku.manager.utils.ShizukuStateMachine
-import moe.shizuku.manager.worker.AdbStartWorker
+import rikka.shizuku.Shizuku
 
 /**
- * Process-local Wi‑Fi STA callback: once paired (key + WSS), retry start when Wi‑Fi is up.
+ * When wireless boot is enabled, re-enqueue [WirelessBootStartWorker] as soon as
+ * Wi‑Fi transport becomes available — so users do not have to tap「重试」after late association.
  */
 object WifiReadyMonitor {
-    private const val DEBOUNCE_MS = 1_000L
+    private const val DEBOUNCE_MS = 1_500L
 
     @Volatile
     private var registered = false
@@ -29,10 +28,13 @@ object WifiReadyMonitor {
     @Synchronized
     fun ensureRegistered(context: Context) {
         if (registered) return
-        // Prefer start-on-boot; also register when already paired so late Wi‑Fi still reconnects.
-        if (!ShizukuSettings.getStartOnBoot(context) && !EnvironmentUtils.canWirelessAutostart(context)) {
-            return
+        if (ShizukuSettings.getPreferences() == null) {
+            ShizukuSettings.initialize(context)
         }
+        val prefs = ShizukuSettings.getPreferences() ?: return
+        val wireless =
+            prefs.getBoolean(ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, false)
+        if (!wireless) return
 
         val app = context.applicationContext
         val cm = app.getSystemService(ConnectivityManager::class.java) ?: return
@@ -45,7 +47,9 @@ object WifiReadyMonitor {
             }
 
             override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-                if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) &&
+                    caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                ) {
                     maybeRetry(app)
                 }
             }
@@ -74,15 +78,20 @@ object WifiReadyMonitor {
     }
 
     private fun maybeRetry(context: Context) {
-        if (!EnvironmentUtils.canWirelessAutostart(context) && !ShizukuSettings.getStartOnBoot(context)) return
-        if (ShizukuStateMachine.isRunning()) return
-        if (EnvironmentUtils.isWifiRequired() && !EnvironmentUtils.isWifiClientConnected(context)) return
+        val prefs = ShizukuSettings.getPreferences() ?: return
+        if (!prefs.getBoolean(ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, false)) return
+        if (Shizuku.pingBinder()) return
 
         val now = System.currentTimeMillis()
         if (now - lastEnqueueAtMs < DEBOUNCE_MS) return
         lastEnqueueAtMs = now
 
-        Log.i(AppConstants.TAG, "WifiReadyMonitor: Wi‑Fi up, AdbStartWorker")
-        AdbStartWorker.enqueue(context, replaceStuck = true)
+        // Same path as notification「重试」button.
+        Log.i(AppConstants.TAG, "WifiReadyMonitor: Wi‑Fi up, startWireless(force)")
+        runCatching {
+            ShizukuReceiverStarter.startWireless(context, force = true)
+        }.onFailure {
+            Log.w(AppConstants.TAG, "WifiReadyMonitor startWireless failed", it)
+        }
     }
 }

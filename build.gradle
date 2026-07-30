@@ -1,17 +1,15 @@
 plugins {
-    id "idea"
-    id "com.android.library" apply false
-    id "org.jetbrains.kotlin.android" apply false
+    id("idea")
 }
 
 idea.module {
-    excludeDirs += file("out")
+    excludeDirs += file('out')
 }
 
-subprojects { subproject ->
+subprojects {
     plugins.withId("com.android.base") {
         android {
-            // Local toolchain: platforms android-36, build-tools 35, ndk 27
+            // Local offline toolchain pin (platforms 36 / bt 35 / ndk 27) — build env only
             compileSdk = 36
             buildToolsVersion = "35.0.0"
             ndkVersion = "27.0.12077973"
@@ -27,17 +25,9 @@ subprojects { subproject ->
     }
 }
 
-def gitCountText = ""
-try {
-    gitCountText = "git rev-list --count HEAD".execute([], project.rootDir).text.trim()
-} catch (Throwable ignored) {
-    gitCountText = ""
-}
-def gitCommitCount = gitCountText.isInteger() ? Integer.parseInt(gitCountText) : 15000
-def baseVersionName = "V15.0"
-def isBeta = project.hasProperty("beta")
+apply from: 'api/manifest.gradle.kts'
+// App release identity (manager / shell). API protocol version stays in api/manifest.gradle.kts.
 ext {
-    // Public version brand: V15.0 (replaces legacy 13.6.x naming).
-    versionCode = gitCommitCount
-    versionName = "${baseVersionName}${if (isBeta) "-beta" else ""}"
+    versionCode = 150000
+    versionName = "V15.0.0"
 }

@@ -3,6 +3,7 @@ package rikka.shizuku.shell;
 import android.app.ActivityManagerNative;
 import android.app.IActivityManager;
 import android.content.Intent;
+import android.content.pm.IPackageManager;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
@@ -16,10 +17,10 @@ import android.system.Os;
 import android.text.TextUtils;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Objects;
 
 import dalvik.system.BaseDexClassLoader;
-import rikka.hidden.compat.PackageManagerApis;
 import stub.dalvik.system.VMRuntimeHidden;
 
 public class ShizukuShellLoader {
@@ -49,17 +50,12 @@ public class ShizukuShellLoader {
         }
     };
 
-    private static void requestForBinder() throws Exception {
+    private static void requestForBinder() throws RemoteException {
         Bundle data = new Bundle();
         data.putBinder("binder", receiverBinder);
 
-        String managerApplicationId = System.getenv("MANAGER_APPLICATION_ID");
-        if (TextUtils.isEmpty(managerApplicationId) || "MANAGER_PKG".equals(managerApplicationId)) {
-            managerApplicationId = BuildConfig.MANAGER_APPLICATION_ID;
-        }
-
         Intent intent = new Intent("rikka.shizuku.intent.action.REQUEST_BINDER")
-                .setPackage(managerApplicationId)
+                .setPackage("moe.shizuku.privileged.api")
                 .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
                 .putExtra("data", data);
 
@@ -110,7 +106,6 @@ public class ShizukuShellLoader {
         }
 
         try {
-            System.out.println("Entering shell...");
             var classLoader = new BaseDexClassLoader(sourceDir, null, librarySearchPath, ClassLoader.getSystemClassLoader());
             Class<?> cls = classLoader.loadClass("moe.shizuku.manager.shell.Shell");
             cls.getDeclaredMethod("main", String[].class, String.class, IBinder.class, Handler.class)
@@ -131,13 +126,28 @@ public class ShizukuShellLoader {
         ShizukuShellLoader.args = args;
 
         String packageName;
-        var pkg = PackageManagerApis.getPackagesForUidNoThrow(Os.getuid());
+
+        IPackageManager packageManager = IPackageManager.Stub.asInterface(
+                ServiceManager.getService("package"));
+        ArrayList<String> pkg = new ArrayList<>();
+        try {
+            String[] pa = packageManager.getPackagesForUid(Os.getuid());
+            if (pa != null) {
+                for (String pn : pa) {
+                    if (pn != null) {
+                        pkg.add(pn);
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+
         if (pkg.size() == 1) {
             packageName = pkg.get(0);
         } else {
             packageName = System.getenv("RISH_APPLICATION_ID");
             if (TextUtils.isEmpty(packageName) || "PKG".equals(packageName)) {
-                abort("RISH_APPLICATION_ID is not set, please set this environment variable in rish to the package name of the terminal app");
+                abort("RISH_APPLICATION_ID is not set, set this environment variable to the id of current application (package name)");
                 System.exit(1);
             }
         }
@@ -160,10 +170,8 @@ public class ShizukuShellLoader {
 
         handler.postDelayed(() -> abort(
                 String.format(
-                        "Request timeout. " +
-                        "If you are using stealth mode, MANAGER_APPLICATION_ID may not be correct. Please set this environment variable in rish to the package name of Shizuku.\n" +
-                        "Otherwise, the connection between the current app (%1$s) and Shizuku app may be blocked by your system. " +
-                        "Please disable all battery optimization features for both current app (%1$s) and Shizuku app.",
+                        "Request timeout. The connection between the current app (%1$s) and Shizuku app may be blocked by your system. " +
+                                "Please disable all battery optimization features for both current app (%1$s) and Shizuku app.",
                         packageName)
         ), 5000);
 

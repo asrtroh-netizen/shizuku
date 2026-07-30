@@ -1,13 +1,18 @@
 package moe.shizuku.manager.settings
 
-import android.content.res.Resources
 import android.os.Bundle
-import androidx.fragment.app.Fragment
-import moe.shizuku.manager.R
-import moe.shizuku.manager.app.AppBarFragmentActivity
+import androidx.activity.compose.setContent
+import moe.shizuku.manager.app.AppActivity
 
-class SettingsActivity : AppBarFragmentActivity() {
+class SettingsActivity : AppActivity() {
 
-    override fun createFragment(): Fragment = SettingsFragment()
-
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            SettingsComposeScreen(
+                onNavigateUp = { finish() },
+                onRecreateRequested = { recreate() }
+            )
+        }
+    }
 }

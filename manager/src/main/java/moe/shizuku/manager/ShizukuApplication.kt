@@ -3,18 +3,14 @@ package moe.shizuku.manager
 import android.app.Application
 import android.content.Context
 import android.os.Build
-import android.os.UserManager
-import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import com.topjohnwu.superuser.Shell
 import moe.shizuku.manager.ktx.logd
-import moe.shizuku.manager.service.WatchdogService
-import moe.shizuku.manager.utils.EnvironmentUtils
-import moe.shizuku.manager.utils.ShizukuStateMachine
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.core.util.BuildUtils.atLeast30
 import rikka.material.app.LocaleDelegate
-import rikka.shizuku.Shizuku
+
+lateinit var application: ShizukuApplication
 
 class ShizukuApplication : Application() {
 
@@ -31,50 +27,24 @@ class ShizukuApplication : Application() {
                 System.loadLibrary("adb")
             }
         }
-
-        lateinit var application: ShizukuApplication
-            private set
-
-        lateinit var appContext: Context
-            private set
-
     }
 
-    private fun init(context: Context) {
+    private fun init(context: Context?) {
         ShizukuSettings.initialize(context)
         LocaleDelegate.defaultLocale = ShizukuSettings.getLocale()
         AppCompatDelegate.setDefaultNightMode(ShizukuSettings.getNightMode())
-
-        val unlocked = context.getSystemService(UserManager::class.java)?.isUserUnlocked != false
-        if (ShizukuSettings.getWatchdog() && unlocked) {
-            runCatching { WatchdogService.start(context) }
-        }
-        // Paired once → keep Wi‑Fi auto-connect armed; nudge if already on Wi‑Fi.
-        // Skip WorkManager while credential-encrypted storage is locked (direct boot).
-        if (EnvironmentUtils.canWirelessAutostart(context) || ShizukuSettings.getStartOnBoot(context)) {
-            EnvironmentUtils.enableAutostartAfterPair(context)
-            if (unlocked) {
-                moe.shizuku.manager.receiver.WifiReadyMonitor.ensureRegistered(context)
-                if (!ShizukuStateMachine.isRunning() &&
-                    (!EnvironmentUtils.isWifiRequired() || EnvironmentUtils.isWifiClientConnected(context))
-                ) {
-                    runCatching {
-                        moe.shizuku.manager.worker.AdbStartWorker.enqueue(context, replaceStuck = true)
-                    }.onFailure {
-                        Log.w("ShizukuApplication", "AdbStartWorker enqueue failed", it)
-                    }
-                }
-            } else {
-                moe.shizuku.manager.receiver.UserPresentRestartReceiver.setEnabled(context, true)
-            }
-        }
     }
 
     override fun onCreate() {
         super.onCreate()
         application = this
-        appContext = applicationContext
         init(this)
+        // Late Wi‑Fi after boot: auto-retry wireless start without tapping「重试」.
+        if (ShizukuSettings.getPreferences()
+                ?.getBoolean(ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, false) == true
+        ) {
+            moe.shizuku.manager.receiver.WifiReadyMonitor.ensureRegistered(this)
+        }
     }
 
 }

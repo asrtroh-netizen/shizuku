@@ -4,18 +4,30 @@ import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.ktx.setComponentEnabled
-import moe.shizuku.manager.worker.AdbStartWorker
 
-/**
- * HSSkyBoy-aligned: resume wireless boot start after unlock.
- */
 class UserPresentRestartReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (Intent.ACTION_USER_PRESENT != intent.action) return
+        if (Intent.ACTION_USER_PRESENT != intent.action) {
+            return
+        }
+
         setEnabled(context, false)
-        AdbStartWorker.enqueue(context, replaceStuck = true)
+        val app = context.applicationContext
+        Log.i(AppConstants.TAG, "USER_PRESENT: force wireless start (immediate + delayed)")
+        // Immediate + delayed: Wi‑Fi / TLS port often appear a few seconds after unlock.
+        ShizukuReceiverStarter.startWireless(app, force = true)
+        Handler(Looper.getMainLooper()).postDelayed({
+            ShizukuReceiverStarter.startWireless(app, force = true)
+        }, 5_000L)
+        Handler(Looper.getMainLooper()).postDelayed({
+            ShizukuReceiverStarter.startWireless(app, force = true)
+        }, 15_000L)
     }
 
     companion object {

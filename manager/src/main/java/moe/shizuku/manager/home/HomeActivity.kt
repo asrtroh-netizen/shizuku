@@ -1,197 +1,163 @@
 package moe.shizuku.manager.home
 
+import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.app.NotificationManager
-import android.content.Context
-import android.content.DialogInterface
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.os.Process
-import android.text.method.LinkMovementMethod
-import android.util.TypedValue
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
-import androidx.activity.viewModels
-import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.lifecycleScope
+import android.provider.Settings
+import android.widget.Toast
+import androidx.activity.compose.setContent
+import androidx.appcompat.app.AlertDialog
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.launch
-import moe.shizuku.manager.R
+import moe.shizuku.manager.Helps
 import moe.shizuku.manager.ShizukuSettings
+import moe.shizuku.manager.adb.AdbMdns
 import moe.shizuku.manager.adb.AdbPairingService
-import moe.shizuku.manager.app.AppBarActivity
-import moe.shizuku.manager.app.SnackbarHelper
-import moe.shizuku.manager.databinding.AboutDialogBinding
-import moe.shizuku.manager.databinding.HomeActivityBinding
-import moe.shizuku.manager.home.showAccessibilityDialog
-import moe.shizuku.manager.ktx.toHtml
-import moe.shizuku.manager.management.AppsViewModel
+import moe.shizuku.manager.adb.AdbWirelessHelper
+import moe.shizuku.manager.app.AppActivity
+import moe.shizuku.manager.management.AppsManagementActivity
+import moe.shizuku.manager.management.appsViewModel
 import moe.shizuku.manager.settings.SettingsActivity
-import moe.shizuku.manager.utils.AppIconCache
+import moe.shizuku.manager.shell.ShellTutorialActivity
+import moe.shizuku.manager.starter.Starter
+import moe.shizuku.manager.starter.StarterActivity
+import moe.shizuku.manager.utils.CustomTabsHelper
 import moe.shizuku.manager.utils.EnvironmentUtils
-import moe.shizuku.manager.utils.SettingsHelper
-import moe.shizuku.manager.utils.ShizukuStateMachine
-import moe.shizuku.manager.utils.UpdateHelper
-import rikka.core.content.asActivity
-import rikka.core.ktx.unsafeLazy
+import moe.shizuku.manager.watchdog.WatchdogService
+import rikka.core.util.ClipboardUtils
 import rikka.lifecycle.Status
-import rikka.recyclerview.addEdgeSpacing
-import rikka.recyclerview.addItemSpacing
-import rikka.recyclerview.fixEdgeEffect
+import rikka.lifecycle.viewModels
 import rikka.shizuku.Shizuku
 
-abstract class HomeActivity : AppBarActivity() {
+abstract class HomeActivity : AppActivity() {
 
-    private val homeModel: HomeViewModel by viewModels()
-    private val appsModel: AppsViewModel by viewModels()
-    private val adapter by unsafeLazy { HomeAdapter(homeModel, appsModel, lifecycleScope) }
-
-    private val stateListener: (ShizukuStateMachine.State) -> Unit = {
-        // Only full-reload when settled; STARTING spam was causing list flicker.
-        when (it) {
-            ShizukuStateMachine.State.RUNNING -> {
-                checkServerStatus()
-                appsModel.load()
-            }
-            ShizukuStateMachine.State.STOPPED,
-            ShizukuStateMachine.State.CRASHED,
-            -> checkServerStatus()
-            ShizukuStateMachine.State.STARTING,
-            ShizukuStateMachine.State.STOPPING,
-            -> {
-                // Refresh hero only — avoid notifyDataSetChanged flash.
-                if (adapter.itemCount > 0) adapter.notifyItemChanged(0)
-            }
-        }
+    companion object {
+        const val EXTRA_START_SERVICE_VIA_WADB = "moe.shizuku.manager.extra.START_SERVICE_VIA_WADB"
     }
+
+    private val binderReceivedListener = Shizuku.OnBinderReceivedListener {
+        checkServerStatus()
+        appsModel.load()
+    }
+
+    private val binderDeadListener = Shizuku.OnBinderDeadListener {
+        checkServerStatus()
+    }
+
+    private val homeModel by viewModels { HomeViewModel() }
+    private val appsModel by appsViewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val binding = HomeActivityBinding.inflate(layoutInflater, rootView, true)
+        handleIntent(intent)
 
         homeModel.serviceStatus.observe(this) {
             if (it.status == Status.SUCCESS) {
-                val status = homeModel.serviceStatus.value?.data ?: return@observe
-                // Full list rebuild while starting causes the hero card to flash.
-                if (!ShizukuStateMachine.preferActivatingUi()) {
-                    adapter.updateData()
-                } else {
-                    adapter.notifyItemChanged(0)
-                }
+                val status = it.data ?: return@observe
                 ShizukuSettings.setLastLaunchMode(if (status.uid == 0) ShizukuSettings.LaunchMethod.ROOT else ShizukuSettings.LaunchMethod.ADB)
             }
         }
+        appsModel.grantedCount.observe(this) { }
 
-        homeModel.shouldShowRebootDialog.observe(this) { shouldShow ->
-            if (shouldShow) showExitDialog(
-                getString(R.string.home_dialog_reboot_required_title),
-                getString(R.string.home_dialog_reboot_required_message)
-            )
-        }
+        setContent {
+            val serviceStatus by homeModel.serviceStatus.observeAsState()
+            val grantedCount by appsModel.grantedCount.observeAsState()
+            HomeComposeScreen(
+                status = serviceStatus?.data,
+                grantedCount = grantedCount?.data,
+                onNavigateBack = { finish() },
+                onOpenSettings = {
+                    startActivity(Intent(this, SettingsActivity::class.java))
+                },
+                onStopService = { stopService() },
+                onManageApps = {
+                    startActivity(Intent(this, AppsManagementActivity::class.java))
+                },
+                onOpenTerminal = {
+                    startActivity(Intent(this, ShellTutorialActivity::class.java))
+                },
+                onStartRoot = { startRootService() },
+                onRestartRoot = { startRootService() },
+                onOpenWirelessGuide = {
+                    CustomTabsHelper.launchUrlOrCopy(this, Helps.ADB_ANDROID11.get())
+                },
+                onPairWireless = {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                        startActivity(Intent(this, moe.shizuku.manager.adb.AdbPairingTutorialActivity::class.java))
+                    }
+                },
+                onStartWirelessAdb = {
+                    val adbWirelessHelper = AdbWirelessHelper()
+                    val customPort = adbWirelessHelper.getConfiguredTcpipPort() ?: -1
+                    val systemPort = EnvironmentUtils.getAdbTcpPort()
 
-        homeModel.shouldShowUninstallDialog.observe(this) { shouldShow ->
-            if (shouldShow) showExitDialog(
-                getString(R.string.home_dialog_duplicate_app_detected_title),
-                getString(R.string.home_dialog_duplicate_app_detected_message)
-            )
-        }
-
-        homeModel.shouldShowBatteryOptimizationSnackbar.observe(this) { shouldShow ->
-            if (shouldShow) SnackbarHelper.show(
-                this,
-                binding.root,
-                msg = getString(R.string.snackbar_battery_optimization_home),
-                duration = Snackbar.LENGTH_INDEFINITE,
-                actionText = getString(R.string.snackbar_action_fix),
-                action = { SettingsHelper.requestIgnoreBatteryOptimizations(this, null) }
-            )
-        }
-        homeModel.checkBatteryOptimization()
-
-        appsModel.grantedCount.observe(this) {
-            if (it.status == Status.SUCCESS || it.status == Status.ERROR) {
-                // Ignore auth-count flaps while activating — they rebuild the whole home list.
-                if (ShizukuStateMachine.preferActivatingUi()) return@observe
-                adapter.updateData()
-            }
-        }
-
-        lifecycleScope.launch {
-            if (UpdateHelper.isCheckForUpdatesEnabled() && UpdateHelper.isNewUpdateAvailable()) {
-                SnackbarHelper.show(
-                    this@HomeActivity,
-                    binding.root,
-                    msg = getString(R.string.snackbar_update_available),
-                    duration = Snackbar.LENGTH_INDEFINITE,
-                    actionText = getString(R.string.snackbar_action_update),
-                    action = {
-                        lifecycleScope.launch {
-                            UpdateHelper.update()
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        if (systemPort in 1..65535) {
+                            startWirelessAdb(systemPort)
+                        } else if (customPort in 1..65535) {
+                            startWirelessAdb(customPort)
+                        } else {
+                            showWirelessAdbDiscoveryDialog()
+                        }
+                    } else {
+                        val port = if (systemPort > 0) systemPort else customPort
+                        if (port > 0) {
+                            startWirelessAdb(port)
+                        } else {
+                            showWirelessAdbNotEnabledDialog()
                         }
                     }
-                )
-                UpdateHelper.updateLastPromptedVersion()
-            }
+                },
+                onCopyAdbCommand = { copyAdbCommand() },
+                onSendAdbCommand = { sendAdbCommand() },
+                onOpenAdbPermissionHelp = {
+                    CustomTabsHelper.launchUrlOrCopy(this, Helps.ADB_PERMISSION.get())
+                },
+                onOpenLearnMore = {
+                    CustomTabsHelper.launchUrlOrCopy(this, Helps.HOME.get())
+                }
+            )
         }
 
-        val recyclerView = binding.list
-        recyclerView.adapter = adapter
-        recyclerView.fixEdgeEffect()
-
-        val cardSpacing = resources.getDimension(R.dimen.card_spacing)
-        val marginHorizontal = resources.getDimension(R.dimen.margin_horizontal)
-        val marginVertical = resources.getDimension(R.dimen.margin_vertical)
-
-        val itemSpacing = cardSpacing / 2f
-        val edgeSpacingH = marginHorizontal
-        val edgeSpacingV = marginVertical - itemSpacing
-
-        recyclerView.addItemSpacing(top = itemSpacing, bottom = itemSpacing)
-        recyclerView.addEdgeSpacing(top = edgeSpacingV, bottom = edgeSpacingV, left = edgeSpacingH, right = edgeSpacingH)
-
-        ShizukuStateMachine.addListener(stateListener)
-    }
-
-    override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
-        intent?.let {
-            val showDialog = it.getBooleanExtra(HomeActivity.EXTRA_SHOW_PAIRING_DIALOG, false)
-            if (showDialog) showAccessibilityDialog()
-
-            val startWadb = it.getBooleanExtra(HomeActivity.EXTRA_START_SERVICE_VIA_WADB, false)
-            if (startWadb) {
-                val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                nm.cancel(AdbPairingService.NOTIFICATION_ID)
-                StartWirelessAdbViewHolder.start(this, lifecycleScope)
-            }
-        }
+        Shizuku.addBinderReceivedListenerSticky(binderReceivedListener)
+        Shizuku.addBinderDeadListener(binderDeadListener)
     }
 
     override fun onResume() {
         super.onResume()
         checkServerStatus()
-        appsModel.load()
     }
 
-    override fun onPause() {
-        super.onPause()
-        SnackbarHelper.dismiss()
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
     }
 
-    private fun showExitDialog(title: String, message: String) {
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle(title)
-            .setMessage(message)
-            .setPositiveButton(R.string.home_dialog_button_exit, null)
-            .setOnDismissListener {
-                this.finishAffinity()
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_START_SERVICE_VIA_WADB, false) == true) {
+            val nm = getSystemService(NotificationManager::class.java)
+            nm.cancel(AdbPairingService.NOTIFICATION_ID)
+
+            val adbWirelessHelper = AdbWirelessHelper()
+            val customPort = adbWirelessHelper.getConfiguredTcpipPort() ?: -1
+            val systemPort = EnvironmentUtils.getAdbTcpPort()
+
+            if (systemPort in 1..65535) {
+                startWirelessAdb(systemPort)
+            } else if (customPort in 1..65535) {
+                startWirelessAdb(customPort)
+            } else {
+                showWirelessAdbDiscoveryDialog()
             }
-            .create()
-
-        dialog.setCanceledOnTouchOutside(false)
-        dialog.show()
+        }
     }
 
     private fun checkServerStatus() {
@@ -199,75 +165,117 @@ abstract class HomeActivity : AppBarActivity() {
     }
 
     override fun onDestroy() {
-        ShizukuStateMachine.removeListener(stateListener)
         super.onDestroy()
+        Shizuku.removeBinderReceivedListener(binderReceivedListener)
+        Shizuku.removeBinderDeadListener(binderDeadListener)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_about -> {
-                val binding = AboutDialogBinding.inflate(LayoutInflater.from(this), null, false)
-                binding.sourceCode.movementMethod = LinkMovementMethod.getInstance()
-                binding.sourceCode.text = getString(
-                    R.string.about_view_source_code,
-                    "<b><a href=\"https://github.com/thedjchi/Shizuku\">GitHub</a></b>"
-                ).toHtml()
-                binding.icon.setImageBitmap(
-                    AppIconCache.getOrLoadBitmap(
-                        this,
-                        applicationInfo,
-                        Process.myUid() / 100000,
-                        resources.getDimensionPixelOffset(R.dimen.default_app_icon_size)
-                    )
-                )
-                binding.versionName.text = packageManager.getPackageInfo(packageName, 0).versionName
-
-                binding.btnUpdate.setOnClickListener {
-                    lifecycleScope.launch {
-                        UpdateHelper.checkAndInstallUpdates()
-                    }
-                }
-
-                val dialog = MaterialAlertDialogBuilder(this)
-                    .setView(binding.root)
-                    .create()
-
-                binding.btnClose.setOnClickListener {
-                    dialog.dismiss()
-                }
-                
-                dialog.show()
-                true
-            }
-            R.id.action_stop -> {
-                if (ShizukuStateMachine.isRunning()) {
-                    MaterialAlertDialogBuilder(this)
-                        .setMessage(R.string.dialog_stop_message)
-                        .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
-                            ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
-                            runCatching { Shizuku.exit() }
-                        }
-                        .setNegativeButton(android.R.string.cancel, null)
-                        .show()
-                }
-                true
-            }
-            R.id.action_settings -> {
-                startActivity(Intent(this, SettingsActivity::class.java))
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
+    private fun stopService() {
+        if (!Shizuku.pingBinder()) return
+        WatchdogService.stop(this)
+        try {
+            Shizuku.exit()
+        } catch (_: Throwable) {
         }
     }
 
-    companion object {
-        const val EXTRA_SHOW_PAIRING_DIALOG = "show_pairing_dialog"
-        const val EXTRA_START_SERVICE_VIA_WADB = "start_service_via_wadb"
+    private fun startRootService() {
+        WatchdogService.stop(this)
+        startActivity(Intent(this, StarterActivity::class.java).apply {
+            putExtra(StarterActivity.EXTRA_IS_ROOT, true)
+        })
     }
 
+    private fun copyAdbCommand() {
+        if (ClipboardUtils.put(this, Starter.adbCommand)) {
+            Toast.makeText(
+                this,
+                getString(moe.shizuku.manager.R.string.toast_copied_to_clipboard, Starter.adbCommand),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    private fun sendAdbCommand() {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, Starter.adbCommand)
+        }
+        startActivity(Intent.createChooser(intent, getString(moe.shizuku.manager.R.string.home_adb_dialog_view_command_button_send)))
+    }
+
+    private fun startWirelessAdb(port: Int) {
+        AdbWirelessHelper().launchStarterActivity(this, "127.0.0.1", port)
+    }
+
+    private fun showWirelessAdbNotEnabledDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setMessage(moe.shizuku.manager.R.string.dialog_wireless_adb_not_enabled)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    private fun openDevelopmentSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra(":settings:fragment_args_key", "toggle_adb_wireless")
+        }
+        try {
+            startActivity(intent)
+        } catch (_: ActivityNotFoundException) {
+        }
+    }
+
+    private fun showWirelessAdbDiscoveryDialog() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+
+        val discoveredPort = MutableLiveData<Int>()
+        val adbMdns = AdbMdns(this, AdbMdns.TLS_CONNECT) {
+            discoveredPort.postValue(it)
+        }
+        val currentPort = EnvironmentUtils.getAdbTcpPort()
+        var dialog: AlertDialog? = null
+        val observer = Observer<Int> {
+            if (it in 1..65535) {
+                dialog?.dismiss()
+                startWirelessAdb(it)
+            }
+        }
+
+        dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(moe.shizuku.manager.R.string.dialog_adb_discovery)
+            .setMessage(moe.shizuku.manager.R.string.dialog_adb_discovery_message)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(moe.shizuku.manager.R.string.development_settings, null)
+            .apply {
+                if (currentPort in 1..65535) {
+                    setNeutralButton(currentPort.toString(), null)
+                }
+            }
+            .create()
+
+        val adbDialog = dialog
+        adbDialog.setCanceledOnTouchOutside(false)
+        adbDialog.setOnShowListener {
+            adbMdns.start()
+            discoveredPort.observe(this, observer)
+            if (checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
+                Settings.Global.putInt(contentResolver, "adb_wifi_enabled", 1)
+                Settings.Global.putInt(contentResolver, Settings.Global.ADB_ENABLED, 1)
+                Settings.Global.putLong(contentResolver, "adb_allowed_connection_time", 0L)
+            }
+            adbDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                openDevelopmentSettings()
+            }
+            adbDialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.setOnClickListener {
+                adbDialog.dismiss()
+                startWirelessAdb(EnvironmentUtils.getAdbTcpPort())
+            }
+        }
+        adbDialog.setOnDismissListener {
+            discoveredPort.removeObserver(observer)
+            adbMdns.stop()
+        }
+        adbDialog.show()
+    }
 }

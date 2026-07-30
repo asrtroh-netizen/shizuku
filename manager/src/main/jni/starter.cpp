@@ -11,6 +11,10 @@
 #include <cerrno>
 #include <string>
 #include <termios.h>
+#include <vector>
+#include <string>
+#include <regex>
+#include <random>
 #include "android.h"
 #include "misc.h"
 #include "selinux.h"
@@ -31,6 +35,7 @@
 #define EXIT_FATAL_KILL 9
 #define EXIT_FATAL_BINDER_BLOCKED_BY_SELINUX 10
 
+#define PACKAGE_NAME "moe.shizuku.privileged.api"
 #define SERVER_NAME "shizuku_server"
 #define SERVER_CLASS_PATH "rikka.shizuku.server.ShizukuService"
 
@@ -113,12 +118,6 @@ v_current = (uintptr_t) v + v_size - sizeof(char *); \
 }
 
 static void start_server(const char *path, const char *main_class, const char *process_name) {
-    int fds[2];
-    if (pipe(fds) < 0) {
-        perrorf("fatal: can't create pipe\n");
-        exit(EXIT_FATAL_FORK);
-    }
-
     pid_t pid = fork();
     switch (pid) {
         case -1: {
@@ -127,7 +126,6 @@ static void start_server(const char *path, const char *main_class, const char *p
         }
         case 0: {
             LOGD("child");
-            close(fds[0]);
             setsid();
             chdir("/");
             int fd = open("/dev/null", O_RDWR);
@@ -137,19 +135,9 @@ static void start_server(const char *path, const char *main_class, const char *p
                 dup2(fd, STDERR_FILENO);
                 if (fd > 2) close(fd);
             }
-            
-            char ready = 1;
-            write(fds[1], &ready, 1);
-            close(fds[1]);
-
             run_server(path, main_class, process_name);
         }
         default: {
-            close(fds[1]);
-            char ready;
-            read(fds[0], &ready, 1);
-            close(fds[0]);
-
             printf("info: shizuku_server pid is %d\n", pid);
             printf("info: shizuku_starter exit with 0\n");
             exit(EXIT_SUCCESS);
@@ -271,20 +259,15 @@ int main(int argc, char *argv[]) {
     }
 
     if (apk_path.empty()) {
-        // Use /proc/self/exe to get the executable path
-        char buf[PATH_MAX];
-        ssize_t len = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
-        if (len == -1) {
-            perror("readlink");
-            return 1;
-        }
-        buf[len] = '\0';
-        std::string exe_path(buf);
-
-        // Find "/lib/" and replace from there with "/base.apk"
-        size_t lib_pos = exe_path.find("/lib/");
-        if (lib_pos != std::string::npos) {
-            apk_path = exe_path.substr(0, lib_pos) + "/base.apk";
+        auto f = popen("pm path " PACKAGE_NAME, "r");
+        if (f) {
+            char line[PATH_MAX]{0};
+            fgets(line, PATH_MAX, f);
+            trim(line);
+            if (strstr(line, "package:") == line) {
+                apk_path = line + strlen("package:");
+            }
+            pclose(f);
         }
     }
 

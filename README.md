@@ -1,152 +1,92 @@
-<div align="center">
+# Shizuku (Fork)
 
-# ✨ Shizuku · asrtroh 修缮版
+[中文版](./README.zh.md)
 
-**配对一次 · 旧 Wi‑Fi 自动连 · 开机 FGS 内激活 · V15.0 Hero**
+## Disclaimer
 
-基于 [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku) 的合规衍生版  
-**本仓只做 Shizuku 管理端** —— IMS 请看旁边的 [OneIms](https://github.com/asrtroh-netizen/OneIms) 哦～
+This is a **fork** of Shizuku. If you are looking for the official Shizuku developed by Rikka, please visit the [**Official Repository**](https://github.com/RikkaApps/Shizuku).
 
-[⬇️ Download](#-下载--download) · [🛠️ Changes](#-本分叉改动--whats-new) · [👨‍👩‍👧 Sister apps](#-同门产品--来串个门) · [🙏 Credits](#-致谢必读--credits)
+## Changes and Enhancements in this Fork
 
-<br/>
+- **Core Fixes and Optimizations**:
+  - ~~Randomize `/data/local/tmp/shizuku` directory name~~
+  - ~~Automatically delete `/data/local/tmp/shizuku_starter` files~~
+  - Enable ADB root permissions on userdebug ROMs.
+  - Support for custom ADB TCP/IP ports, resolving conflicts when the default port 5555 is occupied.
 
-<img src="docs/screenshots/home-active-v15.png" alt="Shizuku V15.0 home — Active" width="360" />
+- **Automation and Watchdog**:
+  - **Start on Boot (Wireless ADB)**: Supports rooted devices and Android 11+ (Wireless ADB) to automatically start the service on boot without a computer.
+  - **Auto Wake-up**: When an application requests Shizuku service, the Manager will attempt to automatically wake up the background service via Wireless ADB if it is not running.
+  - **Watchdog Service**: Introduced a watchdog service for ADB mode that monitors the service status in real-time and automatically repairs disconnections, significantly improving stability.
 
-| Tag | Note |
-|:---:|:---|
-| `V15.0` | versionName |
-| `moe.shizuku.privileged.api` | package（与官方同系，冲突需先卸载） |
-| Apache-2.0 | license |
+- **Workflow Optimizations**:
+  - **One-tap Notification Start**: Optimized the Wireless ADB pairing process. After successful pairing, users can start the service directly from the system notification without returning to the app.
+  - **TV Device Optimization**: Tailored startup logic and UI layout for Android TV and set-top boxes, ensuring compatibility with remote control operations.
 
-</div>
+- **Modern Visual Experience**:
+  - **Material 3 UI**: Completely rewritten settings and management interfaces using **Jetpack Compose**, featuring smoother animations and more intuitive interaction logic.
+  - **Dynamic Colors (Material You)**: Full support for Android 12+ dynamic color systems; the interface tone automatically adjusts to your system wallpaper.
+  - **Pure Black Dark Mode**: Added a "Pure Black" theme option for OLED screens, providing extreme visual contrast and effective power saving.
 
----
+## Usage Guide
 
-## 🙏 致谢（必读） · Credits
+### Start on Boot (Wireless ADB)
+1. Configure Shizuku following the Wireless ADB pairing process.
+2. Enable `Start on boot (Wireless ADB)` in Settings.
+   - This requires `WRITE_SECURE_SETTINGS` permission.
+   - It can be granted automatically by the Manager when Shizuku starts (if already running), or manually via ADB:
+     `adb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS`
 
-> 核心能力来自 **[RikkaApps/Shizuku](https://github.com/RikkaApps/Shizuku)** 与 **[thedjchi/Shizuku](https://github.com/thedjchi/Shizuku)**。  
-> 本仓只是站在巨人肩膀上拧了几颗螺丝——**别把功劳算错人啦** 🙈  
-> Full attribution: [ATTRIBUTION.md](./ATTRIBUTION.md) · [NOTICE](./NOTICE)  
-> Upstream: [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizuku)
+> [!CAUTION]
+> `WRITE_SECURE_SETTINGS` is a high-risk permission. Use it only if you understand the risks. The developers are not responsible for any consequences.
 
----
+### Startup Support Details
+- **Root Mode**: Supports most rooted devices to automatically load the service on boot.
+- **Wireless ADB Mode**: For Android 11+. Uses `WRITE_SECURE_SETTINGS` to monitor network status and restart Shizuku automatically without a PC.
+- **TV Devices**: Specifically optimized for stability in television environments.
 
-## 🛠️ 本分叉改动 · What's New
+## Background
 
-### 中文
+When developing apps that require root, the most common method is to execute commands in a su shell. For example, some apps use the `pm enable/disable` command to enable or disable components.
 
-| 改动 | 说明 |
-|---|---|
-| 🚀 **开机自启（FGS 内激活）** | 对齐 OneKuku：在开机前台服务里完成无线 ADB 激活，不再只把任务丢给易被 OEM 冻结的 WorkManager |
-| 📶 **配对一次 → 能连就自动连** | 有 ADB 密钥 + `WRITE_SECURE_SETTINGS` 后，旧 Wi‑Fi / 晚到网络会自动拉起 |
-| 🎯 **Hero 二态** | 未激活 / **Shizuku + Active**；去掉与下方「启动」重复的激活按钮；去掉「休眠」态 |
-| 🔲 **快捷入口四格** | 应用管理 · 终端 · Root · 电脑 ADB，等宽常显 |
-| 📡 **TcpIp / TCP mode** | 保留 |
-| 🎨 **UI** | Material 蓝系 + 圆角卡片；**不绑定任何 IMS 产品名**；已移除 Buy me a coffee |
+This approach has significant drawbacks:
+1. **Very slow** (multiple processes are created).
+2. **Unreliable** (requires handling text output).
+3. Restricted to existing commands.
+4. Requires root even if ADB has sufficient permissions.
 
-> 💡 建议在设置里为 Shizuku **关闭电池优化**，开机自启更稳。
+Shizuku uses a completely different approach. See below for details.
 
-### English
+## Guide & Download
+Official documentation and downloads: <https://shizuku.rikka.app/>
 
-| Change | Summary |
-|---|---|
-| 🚀 **Boot autostart (in-FGS)** | Activate wireless ADB **inside** the boot foreground service (OneKuku-style), not WorkManager-only |
-| 📶 **Pair once, auto-connect** | With ADB key + `WRITE_SECURE_SETTINGS`, reconnect on remembered / late Wi‑Fi without an extra tap |
-| 🎯 **Hero UI** | Inactive / **Shizuku + Active**; remove duplicate activate CTA; no “Sleeping” state |
-| 🔲 **Four quick tiles** | Apps · Terminal · Root · PC ADB |
-| 📡 **TcpIp / TCP mode** | Kept |
-| 🎨 **UI** | Material blue tweaks; no IMS branding; no Buy-me-a-coffee |
+## How Shizuku Works?
 
-> 💡 Disable battery optimization for Shizuku for reliable boot start.
+Android uses `binder` for inter-process communication (IPC). Shizuku guides users to start a process (Shizuku server) with root or ADB privileges. When an application starts, a `binder` pointing to the Shizuku server is sent to the application.
 
----
+Shizuku acts as an intermediary: it receives requests from applications, forwards them to the system server, and returns the results. This allows apps to use system APIs with higher privileges, which is almost identical to calling system APIs directly.
 
-## ⬇️ 下载 · Download
+## Developer Guide
+Refer to: <https://github.com/RikkaApps/Shizuku-API>
 
-<div align="center">
+## Developing Shizuku
 
-### 👉 [Releases · V15.0](https://github.com/asrtroh-netizen/shizuku/releases)
+### Build
+- Clone with `git clone --recurse-submodules`.
+- Run gradle task `:manager:assembleDebug` or `:manager:assembleRelease`.
 
-| Flavor | File | For |
-|---|---|---|
-| 💎 **Release（推荐 / recommended）** | `shizuku-V15.0-release.apk` | Daily use · smaller · release signing |
+The `:manager:assembleDebug` task generates a debuggable server. You can attach a debugger to the `shizuku_server` process. Ensure "Always install with package manager" is checked in Android Studio settings.
 
-</div>
+## License
+Licensed under Apache 2.0.
 
-> ⚠️ Uninstall conflicting same-package Shizuku first.  
-> ⚠️ Release and Debug use **different signing keys** — you cannot overlay-install across flavors.
+Under Apache 2.0 section 6:
+* **FORBIDDEN** to use `ic_launcher` images unless for Shizuku itself.
+* **FORBIDDEN** to use `Shizuku` as app name or `moe.shizuku.privileged.api` as ID.
 
----
-
-## 👨‍👩‍👧 同门产品 · 来串个门
-
-> Public sister projects. Separate repos.
-
-<table>
-<tr>
-<td width="50%" valign="top">
-
-### 📱 [OneIms](https://github.com/asrtroh-netizen/OneIms)
-
-**让 Pixel 和运营商重新学会沟通。**
-
-Pixel IMS helper — VoLTE · VoWiFi · VoNR · signal bars · CarrierConfig…
-
-- 🟢 **OneKuku**：App 内一键配对  
-- 🔵 **OneIms Lite**：搭配 **本仓 Shizuku** 的轻壳（推荐）
-
-📦 [OneIms Releases](https://github.com/asrtroh-netizen/OneIms/releases)  
-💬 [Telegram · OneBoardX](https://t.me/OneBoardX)
-
-</td>
-<td width="50%" valign="top">
-
-### 🎛️ [OneBoard](https://github.com/asrtroh-netizen/oneboard)
-
-Native Compose console for your onebord gateway (`:8866`).
-
-📦 [asrtroh-netizen/oneboard](https://github.com/asrtroh-netizen/oneboard)
-
-</td>
-</tr>
-</table>
-
-```text
-        ┌─────────────┐     privilege      ┌──────────────────┐
-        │   OneIms    │ ─────────────────► │  Shizuku (this)  │
-        │ Lite line   │                    │  boot-autostart  │
-        └─────────────┘                    └──────────────────┘
-```
-
-Tip: with **OneIms Lite**, keep this Shizuku **Active** — authorize once, no re-pair every day ✨
-
----
-
-## 🏗️ 构建 · Build
-
-```bash
-git clone --recurse-submodules https://github.com/asrtroh-netizen/shizuku.git
-cd shizuku
-# local.properties → sdk.dir
-./gradlew :manager:assembleRelease   # needs signing.properties
-```
-
----
-
-## 📜 License
-
-- Main: **Apache-2.0** ([LICENSE](./LICENSE))
-- API subtree: **MIT** (`api/LICENSE`)
-
-Keep `NOTICE`, `ATTRIBUTION.md`, and `LICENSE` when redistributing.
-
----
-
-<div align="center">
-
-**Made with caffeine & stubbornness · by [asrtroh-netizen](https://github.com/asrtroh-netizen)**
-
-Also ⭐ [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizuku) — the real upstream!
-
-</div>
+## Credits
+- [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizuku)
+- [yangFenTuoZi/Shizuku](https://github.com/yangFenTuoZi/Shizuku)
+- [pixincreate/Shizuku](https://github.com/pixincreate/Shizuku)
+- [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku)
+- ...

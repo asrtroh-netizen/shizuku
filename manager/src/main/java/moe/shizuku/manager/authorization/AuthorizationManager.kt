@@ -1,6 +1,5 @@
 package moe.shizuku.manager.authorization
 
-import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Parcel
@@ -18,6 +17,13 @@ object AuthorizationManager {
     private const val FLAG_ALLOWED = 1 shl 1
     private const val FLAG_DENIED = 1 shl 2
     private const val MASK_PERMISSION = FLAG_ALLOWED or FLAG_DENIED
+
+    private fun isShizukuClientPackage(pi: PackageInfo): Boolean {
+        if (BuildConfig.APPLICATION_ID == pi.packageName) return false
+        if (pi.applicationInfo?.metaData?.getBoolean("moe.shizuku.client.V3_SUPPORT") != true) return false
+        if (pi.requestedPermissions?.contains(Manifest.permission.API_V23) != true) return false
+        return true
+    }
 
     private fun getApplications(userId: Int): List<PackageInfo> {
         val data = Parcel.obtain()
@@ -39,28 +45,41 @@ object AuthorizationManager {
         }
     }
 
-    fun getPackages(exclude: List<String> = emptyList<String>()): List<PackageInfo> {
+    private fun getPackagesLegacyPath(): List<PackageInfo> {
         val packages: MutableList<PackageInfo> = ArrayList()
-        if (Shizuku.isPreV11() || (Shizuku.getVersion() == 11 && Shizuku.getServerPatchVersion() < 3)) {
-            val allPackages: MutableList<PackageInfo> = ArrayList()
-            for (user in ShizukuSystemApis.getUsers(useCache = false)) {
-                try {
-                    allPackages.addAll(ShizukuSystemApis.getInstalledPackages((PackageManager.GET_META_DATA or PackageManager.GET_PERMISSIONS).toLong(), user.id))
-                } catch (e: Throwable) {
-                    LOGGER.w(e, "getInstalledPackages")
-                }
+        val allPackages: MutableList<PackageInfo> = ArrayList()
+        for (user in ShizukuSystemApis.getUsers(useCache = false)) {
+            try {
+                allPackages.addAll(
+                    ShizukuSystemApis.getInstalledPackages(
+                        (PackageManager.GET_META_DATA or PackageManager.GET_PERMISSIONS).toLong(),
+                        user.id
+                    )
+                )
+            } catch (e: Throwable) {
+                LOGGER.w(e, "getInstalledPackages")
             }
-            for (pi in allPackages) {
-                if (pi.packageName in exclude) continue
-                if (pi.applicationInfo?.metaData?.getBoolean("moe.shizuku.client.V3_SUPPORT") != true) continue
-                if (pi.requestedPermissions?.contains(Manifest.permission.API_V23) != true) continue
-
+        }
+        for (pi in allPackages) {
+            if (isShizukuClientPackage(pi)) {
                 packages.add(pi)
             }
-        } else {
-            packages.addAll(getApplications(-1))
         }
         return packages
+    }
+
+    fun getPackages(): List<PackageInfo> {
+        if (Shizuku.isPreV11() || (Shizuku.getVersion() == 11 && Shizuku.getServerPatchVersion() < 3)) {
+            return getPackagesLegacyPath()
+        }
+
+        return try {
+            // Prefer server-side query for modern versions and fall back for newer Android edge cases.
+            getApplications(-1).filter { isShizukuClientPackage(it) }
+        } catch (e: Throwable) {
+            LOGGER.w(e, "getApplications, fallback to getInstalledPackages")
+            getPackagesLegacyPath()
+        }
     }
 
     fun granted(packageName: String, uid: Int): Boolean {

@@ -6,28 +6,25 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.widget.TextView
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.TimeoutCancellationException
 import moe.shizuku.manager.Helps
 import moe.shizuku.manager.R
 import moe.shizuku.manager.app.AppActivity
-import moe.shizuku.manager.databinding.ConfirmationDialogBinding
 import moe.shizuku.manager.ktx.toHtml
 import moe.shizuku.manager.utils.Logger.LOGGER
-import moe.shizuku.manager.utils.ShizukuStateMachine
 import rikka.core.res.resolveColor
 import rikka.html.text.HtmlCompat
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuApiConstants.REQUEST_PERMISSION_REPLY_ALLOWED
 import rikka.shizuku.ShizukuApiConstants.REQUEST_PERMISSION_REPLY_IS_ONETIME
+import rikka.shizuku.server.ktx.workerHandler
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 class RequestPermissionActivity : AppActivity() {
-
-    private lateinit var dialog: Dialog
 
     private fun setResult(requestUid: Int, requestPid: Int, requestCode: Int, allowed: Boolean, onetime: Boolean) {
         val data = Bundle()
@@ -65,16 +62,23 @@ class RequestPermissionActivity : AppActivity() {
     }
 
     private fun waitForBinder(): Boolean {
-        return runBlocking {
-            try { 
-                withTimeout(5000) {
-                    ShizukuStateMachine.asFlow().first { it == ShizukuStateMachine.State.RUNNING }
-                }
-                true
-            } catch (e: TimeoutCancellationException) {
-                LOGGER.e(e, "Binder not received in 5s")
-                false
+        val countDownLatch = CountDownLatch(1)
+
+        val listener = object : Shizuku.OnBinderReceivedListener {
+            override fun onBinderReceived() {
+                countDownLatch.countDown()
+                Shizuku.removeBinderReceivedListener(this)
             }
+        }
+
+        Shizuku.addBinderReceivedListenerSticky(listener, workerHandler)
+
+        return try {
+            countDownLatch.await(5, TimeUnit.SECONDS)
+            true
+        } catch (e: TimeoutException) {
+            LOGGER.e(e, "Binder not received in 5s")
+            false
         }
     }
 
@@ -105,25 +109,27 @@ class RequestPermissionActivity : AppActivity() {
             ai.packageName
         }
 
-        val binding = ConfirmationDialogBinding.inflate(layoutInflater).apply {
-            button1.setOnClickListener {
-                setResult(uid, pid, requestCode, allowed = true, onetime = false)
-                dialog.dismiss()
-            }
-            button3.setOnClickListener {
-                setResult(uid, pid, requestCode, allowed = false, onetime = true)
-                dialog.dismiss()
-            }
-            title.text = HtmlCompat.fromHtml(getString(R.string.permission_warning_template,
-                    label, getString(R.string.permission_group_description)))
+        setContent {
+            RequestPermissionComposeScreen(
+                title = HtmlCompat.fromHtml(
+                    getString(R.string.permission_warning_template, label, getString(R.string.permission_group_description))
+                ).toString(),
+                primaryLabel = getString(R.string.grant_dialog_button_allow_always),
+                secondaryLabel = getString(R.string.grant_dialog_button_allow_once),
+                tertiaryLabel = getString(R.string.grant_dialog_button_deny),
+                onPrimary = {
+                    setResult(uid, pid, requestCode, allowed = true, onetime = false)
+                    finish()
+                },
+                onSecondary = {
+                    setResult(uid, pid, requestCode, allowed = true, onetime = true)
+                    finish()
+                },
+                onTertiary = {
+                    setResult(uid, pid, requestCode, allowed = false, onetime = true)
+                    finish()
+                }
+            )
         }
-
-        dialog = MaterialAlertDialogBuilder(this)
-                .setView(binding.root)
-                .setCancelable(false)
-                .setOnDismissListener { finish() }
-                .create()
-        dialog.setCanceledOnTouchOutside(false)
-        dialog.show()
     }
 }

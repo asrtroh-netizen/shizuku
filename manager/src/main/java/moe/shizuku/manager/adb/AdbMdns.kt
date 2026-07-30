@@ -9,13 +9,15 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.Observer
 import java.io.IOException
 import java.net.InetSocketAddress
+import java.net.InetAddress
 import java.net.NetworkInterface
 import java.net.ServerSocket
+import java.util.concurrent.Executor
 
 @RequiresApi(Build.VERSION_CODES.R)
 class AdbMdns(
     context: Context, private val serviceType: String,
-    private val observer: Observer<Pair<String, Int>>
+    private val observer: Observer<Int>
 ) {
 
     private var registered = false
@@ -23,12 +25,18 @@ class AdbMdns(
     private var serviceName: String? = null
     private val listener = DiscoveryListener(this)
     private val nsdManager: NsdManager = context.getSystemService(NsdManager::class.java)
+    private val executor: Executor = context.mainExecutor
 
     fun start() {
         if (running) return
         running = true
         if (!registered) {
-            nsdManager.discoverServices(serviceType, NsdManager.PROTOCOL_DNS_SD, listener)
+            try {
+                nsdManager.discoverServices(serviceType, NsdManager.PROTOCOL_DNS_SD, listener)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to start service discovery", e)
+                running = false
+            }
         }
     }
 
@@ -49,32 +57,46 @@ class AdbMdns(
     }
 
     private fun onServiceFound(info: NsdServiceInfo) {
-        nsdManager.resolveService(info, ResolveListener(this))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            nsdManager.resolveService(info, executor, ResolveListener(this))
+        } else {
+            @Suppress("DEPRECATION")
+            nsdManager.resolveService(info, ResolveListener(this))
+        }
     }
 
     private fun onServiceLost(info: NsdServiceInfo) {
-        if (info.serviceName == serviceName) observer.onChanged("" to -1)
+        if (info.serviceName == serviceName) observer.onChanged(-1)
     }
 
     private fun onServiceResolved(resolvedService: NsdServiceInfo) {
-        val host = resolvedService.host?.hostAddress ?: return
+        val resolvedHosts = resolvedService.resolvedHosts()
         if (running && NetworkInterface.getNetworkInterfaces()
                 .asSequence()
                 .any { networkInterface ->
                     networkInterface.inetAddresses
                         .asSequence()
-                        .any { host == it.hostAddress }
+                        .any { address -> resolvedHosts.any { it.hostAddress == address.hostAddress } }
                 }
-            && isPortAvailable(host, resolvedService.port)
+            && isPortAvailable(resolvedService.port)
         ) {
             serviceName = resolvedService.serviceName
-            observer.onChanged(host to resolvedService.port)
+            observer.onChanged(resolvedService.port)
         }
     }
 
-    private fun isPortAvailable(host: String, port: Int) = try {
+    private fun NsdServiceInfo.resolvedHosts(): List<InetAddress> {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            hostAddresses
+        } else {
+            @Suppress("DEPRECATION")
+            listOfNotNull(host)
+        }
+    }
+
+    private fun isPortAvailable(port: Int) = try {
         ServerSocket().use {
-            it.bind(InetSocketAddress(host, port), 1)
+            it.bind(InetSocketAddress("127.0.0.1", port), 1)
             false
         }
     } catch (e: IOException) {

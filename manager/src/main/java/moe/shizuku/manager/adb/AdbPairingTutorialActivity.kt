@@ -1,10 +1,10 @@
 package moe.shizuku.manager.adb
 
-import android.Manifest
 import android.app.AppOpsManager
 import android.app.ForegroundServiceStartNotAllowedException
 import android.app.NotificationManager
 import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -12,63 +12,97 @@ import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
-import androidx.core.view.isGone
-import androidx.core.view.isVisible
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import moe.shizuku.manager.AppConstants
-import moe.shizuku.manager.app.AppBarActivity
-import moe.shizuku.manager.databinding.AdbPairingTutorialActivityBinding
-import moe.shizuku.manager.utils.SettingsHelper
-import moe.shizuku.manager.utils.SettingsPage
+import moe.shizuku.manager.app.AppActivity
 import rikka.compatibility.DeviceCompatibility
 
 @RequiresApi(Build.VERSION_CODES.R)
-class AdbPairingTutorialActivity : AppBarActivity() {
+class AdbPairingTutorialActivity : AppActivity() {
 
-    private lateinit var binding: AdbPairingTutorialActivityBinding
+    companion object {
+        private const val ANDROID_17_API = 37
+        private const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
+        private const val REQUEST_LOCAL_NETWORK_PERMISSION = 1001
+    }
 
-    private var notificationEnabled: Boolean = false
+    private var state by mutableStateOf(PairingTutorialState())
+    private var localNetworkPermissionRequested = false
+
+    private fun isNotificationListenerEnabled(): Boolean {
+        val pkgName = packageName
+        val flat = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+        if (flat != null) {
+            val names = flat.split(":").toTypedArray()
+            for (name in names) {
+                val cn = ComponentName.unflattenFromString(name)
+                if (cn != null) {
+                    if (pkgName == cn.packageName) {
+                        return true
+                    }
+                }
+            }
+        }
+        return false
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val context = this
 
-        binding = AdbPairingTutorialActivityBinding.inflate(layoutInflater, rootView, true)
-        
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        syncState()
+        startPairingIfReady()
 
-        notificationEnabled = isNotificationEnabled()
-
-        if (notificationEnabled) {
-            startPairingService()
-        }
-
-        binding.apply {
-            syncNotificationEnabled()
-
-            if (DeviceCompatibility.isMiui()) {
-                miui.isVisible = true
-            }
-
-            developerOptions.setOnClickListener {
-                SettingsHelper.launchOrHighlightWirelessDebugging(context)
-            }
-
-            notificationOptions.setOnClickListener {
-                SettingsPage.Notifications.NotificationSettings.launch(context)
-            }
-        }
-    }
-
-    private fun syncNotificationEnabled() {
-        binding.apply {
-            step1.isVisible = notificationEnabled
-            step2.isVisible = notificationEnabled
-            step3.isVisible = notificationEnabled
-            network.isVisible = notificationEnabled
-            notification.isVisible = notificationEnabled
-            notificationDisabled.isGone = notificationEnabled
+        setContent {
+            AdbPairingTutorialComposeScreen(
+                state = state,
+                showMiuiHint = DeviceCompatibility.isMiui(),
+                onNavigateUp = { finish() },
+                onOpenDeveloperOptions = {
+                    val intent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    intent.putExtra(":settings:fragment_args_key", "toggle_adb_wireless")
+                    try {
+                        startActivity(intent)
+                    } catch (_: ActivityNotFoundException) {
+                    }
+                },
+                onOpenNotificationOptions = {
+                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    intent.putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    try {
+                        startActivity(intent)
+                    } catch (_: ActivityNotFoundException) {
+                    }
+                },
+                onOpenNotificationAccessSettings = {
+                    try {
+                        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS).apply {
+                                putExtra(
+                                    Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
+                                    ComponentName(this@AdbPairingTutorialActivity, AdbPairingNotificationListener::class.java).flattenToString()
+                                )
+                            }
+                        } else {
+                            Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                        }
+                        startActivity(intent)
+                    } catch (_: ActivityNotFoundException) {
+                        try {
+                            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                        } catch (_: ActivityNotFoundException) {
+                        }
+                    }
+                },
+                onRequestLocalNetworkPermission = {
+                    localNetworkPermissionRequested = false
+                    ensureLocalNetworkPermissionOrStartPairing()
+                }
+            )
         }
     }
 
@@ -84,46 +118,66 @@ class AdbPairingTutorialActivity : AppBarActivity() {
     override fun onResume() {
         super.onResume()
 
-        val newNotificationEnabled = isNotificationEnabled()
-        if (newNotificationEnabled != notificationEnabled) {
-            notificationEnabled = newNotificationEnabled
-            syncNotificationEnabled()
-
-            if (newNotificationEnabled) {
-                startPairingService()
-            }
+        val oldState = state
+        syncState()
+        if (
+            state.notificationEnabled &&
+            state.localNetworkPermissionGranted &&
+            (!oldState.notificationEnabled || !oldState.localNetworkPermissionGranted || state.pairingServiceStartFailed)
+        ) {
+            startPairingService()
         }
     }
 
-    // Android 17 (SDK 37) gates local-network access behind ACCESS_LOCAL_NETWORK;
-    // Android 16 (SDK 36) uses NEARBY_WIFI_DEVICES. Without a runtime grant the OS
-    // intercepts the pairing connection with an endless "choose a device" picker.
-    private fun localNetworkPermission(): String? = when {
-        Build.VERSION.SDK_INT >= 37 -> "android.permission.ACCESS_LOCAL_NETWORK"
-        Build.VERSION.SDK_INT >= 36 -> Manifest.permission.NEARBY_WIFI_DEVICES
-        else -> null
+    private fun hasLocalNetworkPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < ANDROID_17_API) {
+            return true
+        }
+        return checkSelfPermission(ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED
     }
 
-    private val localNetworkPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            // Start pairing whether or not the grant succeeded; a denial simply means
-            // discovery/connect will fail and the service surfaces the error.
-            doStartPairingService()
+    private fun ensureLocalNetworkPermissionOrStartPairing() {
+        if (hasLocalNetworkPermission()) {
+            syncState()
+            startPairingService()
+            return
         }
+        if (localNetworkPermissionRequested) {
+            syncState()
+            return
+        }
+        localNetworkPermissionRequested = true
+        requestPermissions(arrayOf(ACCESS_LOCAL_NETWORK), REQUEST_LOCAL_NETWORK_PERMISSION)
+        syncState()
+    }
+
+    private fun startPairingIfReady() {
+        if (state.notificationEnabled) {
+            ensureLocalNetworkPermissionOrStartPairing()
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != REQUEST_LOCAL_NETWORK_PERMISSION) {
+            return
+        }
+        localNetworkPermissionRequested = false
+        syncState()
+        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            startPairingService()
+        }
+    }
 
     private fun startPairingService() {
-        val permission = localNetworkPermission()
-        if (permission != null && checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
-            localNetworkPermissionLauncher.launch(permission)
-        } else {
-            doStartPairingService()
-        }
-    }
-
-    private fun doStartPairingService() {
         val intent = AdbPairingService.startIntent(this)
         try {
             startForegroundService(intent)
+            state = state.copy(pairingServiceStartFailed = false)
         } catch (e: Throwable) {
             Log.e(AppConstants.TAG, "startForegroundService", e)
 
@@ -136,7 +190,25 @@ class AdbPairingTutorialActivity : AppBarActivity() {
                     Toast.makeText(this, "OP_START_FOREGROUND is denied. What are you doing?", Toast.LENGTH_LONG).show()
                 }
                 startService(intent)
+                state = state.copy(pairingServiceStartFailed = false)
+            } else {
+                state = state.copy(pairingServiceStartFailed = true)
             }
         }
     }
+
+    private fun syncState() {
+        state = state.copy(
+            notificationEnabled = isNotificationEnabled(),
+            notificationListenerEnabled = isNotificationListenerEnabled(),
+            localNetworkPermissionGranted = hasLocalNetworkPermission()
+        )
+    }
 }
+
+data class PairingTutorialState(
+    val notificationEnabled: Boolean = false,
+    val notificationListenerEnabled: Boolean = false,
+    val localNetworkPermissionGranted: Boolean = true,
+    val pairingServiceStartFailed: Boolean = false
+)

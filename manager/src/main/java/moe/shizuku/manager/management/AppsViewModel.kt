@@ -1,24 +1,29 @@
 package moe.shizuku.manager.management
 
-import android.app.Application
 import android.content.Context
 import android.content.pm.PackageInfo
 import androidx.activity.ComponentActivity
 import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import moe.shizuku.manager.authorization.AuthorizationManager
 import rikka.lifecycle.Resource
+import rikka.lifecycle.activitySharedViewModels
+import rikka.lifecycle.sharedViewModels
 
-class AppsViewModel(application: Application) : AndroidViewModel(application) {
+@MainThread
+fun ComponentActivity.appsViewModel() = sharedViewModels { AppsViewModel(this) }
 
-    private val appContext = getApplication<Application>().applicationContext
+@MainThread
+fun Fragment.appsViewModel() = activitySharedViewModels { AppsViewModel(requireContext()) }
+
+class AppsViewModel(context: Context) : ViewModel() {
 
     private val _packages = MutableLiveData<Resource<List<PackageInfo>>>()
     val packages = _packages as LiveData<Resource<List<PackageInfo>>>
@@ -31,15 +36,13 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val list: MutableList<PackageInfo> = ArrayList()
                 var count = 0
-                for (pi in AuthorizationManager.getPackages(
-                    exclude = listOf(appContext.packageName)
-                )) {
+                for (pi in AuthorizationManager.getPackages()) {
                     list.add(pi)
                     if (AuthorizationManager.granted(pi.packageName, pi.applicationInfo!!.uid)) count++
                 }
                 if (!onlyCount) _packages.postValue(Resource.success(list))
                 _grantedCount.postValue(Resource.success(count))
-            } catch (e: CancellationException) {
+            } catch (_: CancellationException) {
 
             } catch (e: Throwable) {
                 _packages.postValue(Resource.error(e, null))
@@ -47,5 +50,4 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
-    
 }
