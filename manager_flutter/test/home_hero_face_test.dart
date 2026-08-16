@@ -22,6 +22,8 @@ void main() {
     expect(face.mood, DotMatrixMood.frown);
 
     expect(find.text('Lang'), findsOneWidget);
+    expect(find.byIcon(Icons.light_mode_outlined), findsWidgets);
+    expect(find.byIcon(Icons.dark_mode_outlined), findsWidgets);
     expect(find.text('Wireless debugging'), findsOneWidget);
     expect(find.text('Quick actions'), findsOneWidget);
     expect(find.text('Application management'), findsOneWidget);

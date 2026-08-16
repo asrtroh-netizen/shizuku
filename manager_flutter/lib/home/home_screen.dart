@@ -482,6 +482,7 @@ class _ThemeSlide extends StatelessWidget {
     const trackH = 30.0;
     const knob = 24.0;
     const pad = 3.0;
+    const iconTint = Color(0xFF3A4A6B);
     final cs = Theme.of(context).colorScheme;
     final offset = dark ? trackW - knob - pad : pad;
     return Semantics(
@@ -492,58 +493,65 @@ class _ThemeSlide extends StatelessWidget {
         child: SizedBox(
           width: trackW,
           height: trackH,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: ColoredBox(
               color: cs.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Stack(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 7),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Icon(
-                        Icons.light_mode_outlined,
-                        size: 14,
-                        color: cs.onSurface.withValues(alpha: dark ? 0.35 : 0.9),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 7),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.light_mode_outlined,
+                            size: 14,
+                            color: iconTint.withValues(alpha: dark ? 0.35 : 0.9),
+                          ),
+                          Icon(
+                            Icons.dark_mode_outlined,
+                            size: 14,
+                            color: iconTint.withValues(alpha: dark ? 0.9 : 0.35),
+                          ),
+                        ],
                       ),
-                      Icon(
-                        Icons.dark_mode_outlined,
-                        size: 14,
-                        color: cs.onSurface.withValues(alpha: dark ? 0.9 : 0.35),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOut,
-                  left: offset,
-                  top: pad,
-                  child: Container(
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOut,
+                    left: offset,
+                    top: pad,
                     width: knob,
                     height: knob,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          blurRadius: 2,
-                          offset: Offset(0, 1),
-                          color: Color(0x33000000),
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            blurRadius: 2,
+                            offset: Offset(0, 1),
+                            color: Color(0x33000000),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Icon(
+                          dark
+                              ? Icons.dark_mode_outlined
+                              : Icons.light_mode_outlined,
+                          size: 14,
+                          color: iconTint,
                         ),
-                      ],
-                    ),
-                    child: Icon(
-                      dark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
-                      size: 14,
-                      color: const Color(0xFF3A4A6B),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
