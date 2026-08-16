@@ -22,7 +22,6 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
-import moe.shizuku.manager.MainActivity
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.home.HomeActivity
@@ -261,7 +260,7 @@ class AdbPairingService : Service() {
     }
 
     private val launchIntent by unsafeLazy {
-        Intent(this, MainActivity::class.java).apply {
+        Intent(this, moe.shizuku.manager.flutter.FlutterHostActivity::class.java).apply {
             addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK or
                         Intent.FLAG_ACTIVITY_CLEAR_TOP or

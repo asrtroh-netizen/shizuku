@@ -15,6 +15,7 @@ class ShizukuFlutterApp extends StatelessWidget {
       title: 'Shizuku',
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
       builder: (context, child) =>
           GlassBackdrop(child: child ?? const SizedBox.shrink()),
       home: const HomeScreen(),

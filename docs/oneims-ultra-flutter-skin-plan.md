@@ -162,8 +162,8 @@ Shizuku 专用组件只做编排：
 
 | 期 | 范围 | 完成标准 |
 |---|---|---|
-| P0 皮 | 模块能编进 APK；首页只读 Hero；黑白玻璃 + Montserrat；**门面卡右侧点阵脸（笑/哭）必现** | **已落地（2026-08-17）**：Launcher=`FlutterHostActivity`；debug APK `shizuku-vV15.1.0-debug.apk` 含 `libflutter.so` + Montserrat + `kernel_blob.bin`；包名仍 `moe.shizuku.privileged.api`。Dart 测：无宿主时 Hero+哭脸。真机笑/哭 **NOT RUN**。Compose 回滚页仍在，工程内仍可能 grep 到 `#0B57D0`（旧皮，不是 Flutter 模块）。 |
-| P1 能启动 | Hero 主按钮 / 无线 / Root / 开机 / Watchdog / 检查更新走真通道 | 真机：ping binder、无线配对、开机开关写进现有 Preferences |
+| P0 皮 | 模块能编进 APK；首页只读 Hero；黑白玻璃 + Montserrat；**门面卡右侧点阵脸（笑/哭）必现** | **已落地（2026-08-17）**：Launcher=`FlutterHostActivity`；包名仍 `moe.shizuku.privileged.api`。 |
+| P1 能启动 | 原 Compose 首页**全部动作**换皮：Lang/日月、无线指南/配对/启动、2×2、开机三开关、ADB 受限条、检查更新；Kotlin `HomeActions` 为唯一逻辑真源 | **已落地（2026-08-17）**：`shizuku/home` + `shizuku/home/events`；真机点阵笑/哭与无线/开机 **仍待装包确认**。 |
 | P2 列表与设置 | 授权应用列表、设置页、语言 | 授权数与现 Compose 一致 |
 | P3 教程壳 | 无线指南、终端教程用 Flutter 壳，系统配对服务仍原生 | 通知一键启动不回归 |
 | P4 拆旧 | 删除 `LibrarySkinHome` 等 Compose 页 | Debug/Release 各打一包，API 客户端仍能连 |
