@@ -86,6 +86,7 @@ import moe.shizuku.manager.ShizukuSettings.WATCHDOG_ENABLED_ADB
 import moe.shizuku.manager.model.ServiceStatus
 import moe.shizuku.manager.receiver.BootCompleteReceiver
 import moe.shizuku.manager.receiver.WifiReadyMonitor
+import moe.shizuku.manager.ui.widget.DotMatrixFaceWell
 import moe.shizuku.manager.update.UpdateChecker
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.watchdog.WatchdogService
@@ -534,6 +535,15 @@ private fun LibraryHeroCard(running: Boolean) {
                         )
                     }
                 }
+                Spacer(Modifier.width(12.dp))
+                DotMatrixFaceWell(
+                    smile = running,
+                    color = fg,
+                    semanticLabel = stringResource(
+                        if (running) R.string.home_hero_stage_ready
+                        else R.string.home_hero_stage_inactive,
+                    ),
+                )
             }
             Spacer(Modifier.height(18.dp))
             StageStrip(ready = running, fg = fg)

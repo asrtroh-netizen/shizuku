@@ -42,6 +42,10 @@ android {
             shrinkResources true
             vcsInfo.include false
             proguardFiles 'proguard-rules.pro'
+            ndk {
+                // 正式包只带真机 ABI；x86_64 留给 debug 模拟器。
+                abiFilters 'arm64-v8a', 'armeabi-v7a'
+            }
         }
     }
     externalNativeBuild {
@@ -196,6 +200,10 @@ dependencies {
     implementation libs.bouncycastle.bcpkix
 
     implementation libs.appiconloader
+
+    // P0：AGP 8.10 不能源码 include :flutter，先消费 `flutter build aar --no-profile` 产物。
+    debugImplementation 'moe.shizuku.manager_flutter:flutter_debug:1.0'
+    releaseImplementation 'moe.shizuku.manager_flutter:flutter_release:1.0'
 }
 
 apply from: rootProject.file('signing.gradle')

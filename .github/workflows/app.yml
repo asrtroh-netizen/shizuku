@@ -20,6 +20,10 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
       - name: Write key
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
         run: |
@@ -52,10 +56,12 @@ jobs:
         id: buildWithGradle
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "cmake;3.31.0" > /dev/null || true
           echo 'android.sdk.channel=3' >> gradle.properties
           echo 'android.native.buildOutput=verbose' >> gradle.properties
           echo 'org.gradle.caching=true' >> gradle.properties
           echo 'org.gradle.parallel=true' >> gradle.properties
+          (cd manager_flutter && flutter pub get && flutter build aar --no-profile)
           ./gradlew :manager:assembleRelease :manager:assembleDebug
           releaseName=`ls manager/build/outputs/apk/release/shizuku*-v*-release.apk | awk -F '(/|.apk)' '{print $6}'` && echo "releaseName=$releaseName" >> $GITHUB_OUTPUT
           debugName=`ls manager/build/outputs/apk/debug/shizuku*-v*-debug.apk | awk -F '(/|.apk)' '{print $6}'` && echo "debugName=$debugName" >> $GITHUB_OUTPUT

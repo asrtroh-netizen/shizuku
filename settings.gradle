@@ -1,12 +1,12 @@
 pluginManagement {
     repositories {
-        mavenLocal()
         maven { url = "https://maven.aliyun.com/repository/google" }
         maven { url = "https://maven.aliyun.com/repository/central" }
         maven { url = "https://maven.aliyun.com/repository/gradle-plugin" }
         maven { url = "https://plugins.gradle.org/m2/" }
         mavenCentral()
         google()
+        mavenLocal()
     }
     plugins {
         id("com.android.application") version "8.10.1"
@@ -19,20 +19,27 @@ pluginManagement {
     }
 }
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
-        mavenLocal()
         maven { url = "https://maven.aliyun.com/repository/google" }
-        // Prefer mavenCentral before Aliyun central: Aliyun often has POM but missing Kotlin RC jars
         mavenCentral()
         maven { url = "https://maven.aliyun.com/repository/central" }
-        // google() omitted: dl.google.com often times out here; Aliyun google mirror covers AndroidX/AGP
+        exclusiveContent {
+            forRepository {
+                maven { url = "${rootDir}/manager_flutter/build/host/outputs/repo" }
+            }
+            filter {
+                includeGroup("moe.shizuku.manager_flutter")
+            }
+        }
+        maven { url = "https://storage.googleapis.com/download.flutter.io" }
         maven {
             url("https://jitpack.io")
             content {
                 includeGroup("com.github.topjohnwu.libsu")
             }
         }
+        mavenLocal()
     }
 }
 
