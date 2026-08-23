@@ -18,10 +18,75 @@ import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.UserHandleCompat
 import rikka.shizuku.Shizuku
 
+internal enum class RootStartMethod {
+    LIBSU,
+    NATIVE_SU,
+}
+
+internal sealed interface RootStartResult {
+    val method: RootStartMethod
+
+    data class Success(
+        override val method: RootStartMethod,
+        val exitCode: Int,
+    ) : RootStartResult
+
+    data class Failure(
+        override val method: RootStartMethod,
+        val exitCode: Int? = null,
+        val error: Throwable? = null,
+    ) : RootStartResult
+
+    companion object {
+        fun success(method: RootStartMethod, exitCode: Int = 0) =
+            Success(method, exitCode)
+
+        fun failure(
+            method: RootStartMethod,
+            exitCode: Int? = null,
+            error: Throwable? = null,
+        ) = Failure(method, exitCode, error)
+    }
+}
+
+internal fun runRootStartAttempt(
+    hasRootShell: () -> Boolean,
+    resetCachedShell: () -> Unit,
+    executeLibsu: () -> Int,
+    executeNativeSu: () -> RootStartResult,
+): RootStartResult {
+    fun libsuResult(): RootStartResult = runCatching { executeLibsu() }
+        .fold(
+            { code ->
+                if (code == 0) RootStartResult.success(RootStartMethod.LIBSU, code)
+                else RootStartResult.failure(RootStartMethod.LIBSU, code)
+            },
+            { error -> RootStartResult.failure(RootStartMethod.LIBSU, error = error) },
+        )
+
+    if (runCatching(hasRootShell).getOrDefault(false)) {
+        return libsuResult()
+    }
+
+    runCatching(resetCachedShell)
+    if (runCatching(hasRootShell).getOrDefault(false)) {
+        return libsuResult()
+    }
+
+    return runCatching(executeNativeSu).getOrElse { error ->
+        RootStartResult.failure(RootStartMethod.NATIVE_SU, error = error)
+    }
+}
+
 object ShizukuReceiverStarter {
 
     fun startOnBoot(context: Context) {
-        if (UserHandleCompat.myUserId() > 0 || Shizuku.pingBinder()) {
+        if (UserHandleCompat.myUserId() > 0) {
+            UserPresentRestartReceiver.setEnabled(context, false)
+            return
+        }
+        if (runCatching { Shizuku.pingBinder() }.getOrDefault(false)) {
+            UserPresentRestartReceiver.setEnabled(context, false)
             return
         }
 
@@ -32,7 +97,7 @@ object ShizukuReceiverStarter {
             preferences.getBoolean(ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, false)
 
         if (startOnBootRootEnabled) {
-            rootStart()
+            RootBootStartWorker.enqueue(context)
             return
         }
 
@@ -125,15 +190,16 @@ object ShizukuReceiverStarter {
         }
     }
 
-    private fun rootStart() {
-        if (Shell.getShell().isRoot) {
-            Shell.cmd(Starter.internalCommand).exec()
-            return
-        }
-        Shell.getCachedShell()?.close()
-        // libsu 未拿到 root shell 时，再试一次原生 su -c（部分机型 Magisk 授权时机更晚）
+    internal fun startRootNow(): RootStartResult = runRootStartAttempt(
+        hasRootShell = { Shell.getShell().isRoot },
+        resetCachedShell = { Shell.getCachedShell()?.close() },
+        executeLibsu = { Shell.cmd(Starter.internalCommand).exec().code },
+        executeNativeSu = { executeNativeRootCommand() },
+    )
+
+    private fun executeNativeRootCommand(): RootStartResult {
         val cmd = Starter.internalCommand
-        val ok = runCatching {
+        return runCatching {
             val process = ProcessBuilder("su", "-c", cmd)
                 .redirectErrorStream(true)
                 .start()
@@ -141,17 +207,15 @@ object ShizukuReceiverStarter {
             if (!finished) {
                 process.destroyForcibly()
                 Log.w(AppConstants.TAG, "rootStart: su -c timed out")
-                return@runCatching false
+                return@runCatching RootStartResult.failure(RootStartMethod.NATIVE_SU)
             }
             val code = process.exitValue()
             Log.i(AppConstants.TAG, "rootStart: su -c exit=$code")
-            code == 0
+            if (code == 0) RootStartResult.success(RootStartMethod.NATIVE_SU, code)
+            else RootStartResult.failure(RootStartMethod.NATIVE_SU, code)
         }.getOrElse { error ->
             Log.w(AppConstants.TAG, "rootStart: su -c failed", error)
-            false
-        }
-        if (!ok) {
-            Log.w(AppConstants.TAG, "rootStart: no root shell available")
+            RootStartResult.failure(RootStartMethod.NATIVE_SU, error = error)
         }
     }
 }

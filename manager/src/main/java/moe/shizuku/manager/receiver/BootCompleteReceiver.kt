@@ -42,9 +42,10 @@ class BootCompleteReceiver : BroadcastReceiver() {
 
         if (wirelessBoot) {
             WifiReadyMonitor.ensureRegistered(context)
-            // Keep USER_PRESENT armed until binder is up — unlock/Wi‑Fi often lag BOOT_COMPLETED.
-            UserPresentRestartReceiver.setEnabled(context, true)
         }
+        // Keep USER_PRESENT armed until the selected worker confirms Binder readiness.
+        // Unlock, Wi-Fi and Magisk may all lag BOOT_COMPLETED on real devices.
+        UserPresentRestartReceiver.setEnabled(context, true)
 
         Log.i(AppConstants.TAG, "boot: startOnBoot")
         runCatching {
