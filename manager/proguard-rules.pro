@@ -55,7 +55,10 @@
     public *** d(...);
 }
 
--allowaccessmodification
+# V15.1.2 真机 dex：K60 = ViewModel，只剩 a/b/c/d；X3 仍 invoke-virtual K60.clear()
+# → NoSuchMethodError。fullMode + allowaccessmodification 会裁掉方法却留下调用。
+# 不能全局 -dontoptimize：rikkax_lifecycle_ViewModel 仍调 clear()，而 2.9 的 JVM 名是
+# clear$lifecycle_viewmodel_release；关掉优化会让这处调用永远对不上。
 -repackageclasses rikka.shizuku
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
@@ -65,11 +68,13 @@
 -keep class moe.shizuku.manager.flutter.FlutterHostActivity { *; }
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }
--keep class androidx.compose.runtime.collection.** { *; }
--keep class androidx.compose.runtime.snapshots.** { *; }
--keepclassmembers class androidx.compose.runtime.collection.MutableVector { <methods>; }
--keepclassmembers class androidx.compose.runtime.snapshots.SnapshotStateList { <methods>; }
--keepclassmembers class androidx.compose.runtime.snapshots.SnapshotStateMap { <methods>; }
+-keep class androidx.compose.** { *; }
+-keep class androidx.collection.** { *; }
+# 15.1.3 mapping：K60 = androidx.lifecycle.ViewModel，X3 = AndroidComposeView_androidKt
+-keep class androidx.lifecycle.ViewModel { *; }
+-keepclassmembers class * {
+    void clear();
+}
 -dontwarn io.flutter.embedding.**
 -dontwarn io.flutter.plugin.**
 -dontwarn android.**

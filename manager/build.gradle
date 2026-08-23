@@ -189,7 +189,8 @@ dependencies {
     implementation libs.rikka.html.ktx
     implementation libs.borderview
     implementation libs.rikka.lifecycle.resource.livedata
-    implementation libs.rikka.lifecycle.shared.viewmodel
+    // AAR minus rikkax_lifecycle_ViewModel; shim in src calls Lifecycle 2.9 JVM name.
+    implementation files('libs/lifecycle-shared-viewmodel-noshim.jar')
     implementation libs.rikka.lifecycle.viewmodel.lazy
 
     implementation libs.boringssl
