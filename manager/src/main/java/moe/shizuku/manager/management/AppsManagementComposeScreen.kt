@@ -40,7 +40,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -85,16 +84,16 @@ private fun ApplicationManagementContent(
     onTogglePackage: (PackageInfo) -> ToggleResult
 ) {
     var dialogState by remember { mutableStateOf<ManagementDialogState?>(null) }
-    val grantStates = remember { mutableStateMapOf<String, Boolean>() }
+    var grantStates by remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
 
     LaunchedEffect(packages) {
-        val currentKeys = packages.mapNotNull { packageInfo ->
+        val queries = packages.mapNotNull { packageInfo ->
             val uid = packageInfo.applicationInfo?.uid ?: return@mapNotNull null
-            val key = packageGrantKey(packageInfo.packageName, uid)
-            grantStates[key] = AuthorizationManager.granted(packageInfo.packageName, uid)
-            key
-        }.toSet()
-        grantStates.keys.filter { it !in currentKeys }.forEach { grantStates.remove(it) }
+            GrantQuery(packageInfo.packageName, uid)
+        }
+        grantStates = loadGrantStates(queries) { packageName, uid ->
+            AuthorizationManager.granted(packageName, uid)
+        }
     }
 
     Scaffold(
@@ -133,13 +132,15 @@ private fun ApplicationManagementContent(
                     items(packages.filter { it.applicationInfo != null }, key = { it.packageName + "#" + it.applicationInfo!!.uid }) { packageInfo ->
                         val uid = packageInfo.applicationInfo!!.uid
                         val grantKey = packageGrantKey(packageInfo.packageName, uid)
-                        val granted = grantStates[grantKey] ?: AuthorizationManager.granted(packageInfo.packageName, uid)
+                        val granted = grantStates[grantKey] == true
                         AppCard(
                             packageInfo = packageInfo,
                             granted = granted,
                             onToggle = {
                                 when (onTogglePackage(packageInfo)) {
-                                    ToggleResult.Success -> grantStates[grantKey] = AuthorizationManager.granted(packageInfo.packageName, uid)
+                                    ToggleResult.Success -> {
+                                        grantStates = grantStates + (grantKey to AuthorizationManager.granted(packageInfo.packageName, uid))
+                                    }
                                     ToggleResult.AdbLimited -> dialogState = ManagementDialogState.AdbLimited
                                 }
                             }
@@ -166,10 +167,6 @@ private fun ApplicationManagementContent(
             }
         )
     }
-}
-
-private fun packageGrantKey(packageName: String, uid: Int): String {
-    return "$packageName#$uid"
 }
 
 @Composable

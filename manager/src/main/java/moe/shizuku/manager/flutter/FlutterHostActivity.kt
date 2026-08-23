@@ -2,6 +2,8 @@ package moe.shizuku.manager.flutter
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -24,13 +26,14 @@ class FlutterHostActivity : FlutterActivity() {
     private lateinit var actions: HomeActions
 
     private var eventSink: EventChannel.EventSink? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     private val binderReceivedListener = Shizuku.OnBinderReceivedListener {
-        eventSink?.success("changed")
+        emitHomeChanged()
     }
 
     private val binderDeadListener = Shizuku.OnBinderDeadListener {
-        eventSink?.success("changed")
+        emitHomeChanged()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,7 +53,7 @@ class FlutterHostActivity : FlutterActivity() {
 
     override fun onResume() {
         super.onResume()
-        eventSink?.success("changed")
+        emitHomeChanged()
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -161,6 +164,21 @@ class FlutterHostActivity : FlutterActivity() {
         Shizuku.removeBinderDeadListener(binderDeadListener)
         eventSink = null
         super.onDestroy()
+    }
+
+    private fun emitHomeChanged() {
+        val emit = Runnable {
+            try {
+                if (isDestroyed) return@Runnable
+                eventSink?.success("changed")
+            } catch (_: Throwable) {
+            }
+        }
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            emit.run()
+        } else {
+            mainHandler.post(emit)
+        }
     }
 
     private fun runAction(result: MethodChannel.Result, name: String, block: () -> Unit) {

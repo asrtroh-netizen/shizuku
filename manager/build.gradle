@@ -204,6 +204,8 @@ dependencies {
     // P0：AGP 8.10 不能源码 include :flutter，先消费 `flutter build aar --no-profile` 产物。
     debugImplementation 'moe.shizuku.manager_flutter:flutter_debug:1.0'
     releaseImplementation 'moe.shizuku.manager_flutter:flutter_release:1.0'
+
+    testImplementation 'junit:junit:4.13.2'
 }
 
 apply from: rootProject.file('signing.gradle')

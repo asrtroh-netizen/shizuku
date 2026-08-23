@@ -21,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   StreamSubscription<dynamic>? _sub;
   HomeSnapshot _snap = HomeSnapshot.empty;
   bool _checkingUpdate = false;
+  int _refreshSeq = 0;
 
   @override
   void initState() {
@@ -48,8 +49,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _refresh() async {
+    final seq = ++_refreshSeq;
     final map = await HomeChannel.getState();
-    if (!mounted) return;
+    if (!mounted || seq != _refreshSeq) return;
     setState(() => _snap = HomeSnapshot.fromJson(map));
   }
 

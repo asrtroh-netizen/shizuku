@@ -1,6 +1,7 @@
 package moe.shizuku.manager.management
 
 import android.os.Bundle
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -46,7 +47,7 @@ class AppsManagementActivity : AppActivity() {
             val packagesState by viewModel.packages.observeAsState()
             ApplicationManagementComposeScreen(
                 packages = packagesState?.data ?: emptyList(),
-                onNavigateUp = { finish() },
+                onNavigateUp = { finishSafely() },
                 onTogglePackage = { packageInfo ->
                     val applicationInfo = packageInfo.applicationInfo ?: return@ApplicationManagementComposeScreen ToggleResult.Success
                     try {
@@ -74,6 +75,21 @@ class AppsManagementActivity : AppActivity() {
         }
 
         Shizuku.addBinderDeadListener(binderDeadListener)
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                finishSafely()
+            }
+        })
+    }
+
+    private fun finishSafely() {
+        if (isFinishing || isDestroyed) return
+        window.decorView.post {
+            if (!isFinishing && !isDestroyed) {
+                finish()
+            }
+        }
     }
 
     override fun onDestroy() {
