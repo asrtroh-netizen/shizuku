@@ -88,6 +88,7 @@
             android:name=".flutter.FlutterHostActivity"
             android:banner="@mipmap/banner"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:enableOnBackInvokedCallback="false"
             android:exported="true"
             android:hardwareAccelerated="true"
             android:launchMode="singleTop"

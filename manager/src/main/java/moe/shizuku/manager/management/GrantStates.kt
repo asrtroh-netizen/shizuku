@@ -28,3 +28,15 @@ internal suspend fun loadGrantStates(
 ): Map<String, Boolean> = withContext(Dispatchers.IO) {
     buildGrantStateMap(apps, granted)
 }
+
+internal object GrantedCountCache {
+    @Volatile
+    var value: Int = -1
+}
+
+internal fun resolveGrantedCount(cached: Int, scan: () -> Int): Int {
+    if (cached >= 0) return cached
+    val fresh = scan()
+    if (fresh >= 0) GrantedCountCache.value = fresh
+    return fresh
+}

@@ -38,4 +38,23 @@ class GrantStatesTest {
             queryThreads.none { it === caller },
         )
     }
+
+    @Test
+    fun resolveGrantedCount_usesCacheAndDoesNotScan() {
+        var scanned = false
+        val count = resolveGrantedCount(4) {
+            scanned = true
+            99
+        }
+        assertEquals(4, count)
+        assertFalse(scanned)
+    }
+
+    @Test
+    fun resolveGrantedCount_scansWhenCacheEmpty() {
+        val count = resolveGrantedCount(-1) { 6 }
+        assertEquals(6, count)
+        assertEquals(6, GrantedCountCache.value)
+        GrantedCountCache.value = -1
+    }
 }

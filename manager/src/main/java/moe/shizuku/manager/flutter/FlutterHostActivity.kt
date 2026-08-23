@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import androidx.lifecycle.Lifecycle
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -49,11 +50,6 @@ class FlutterHostActivity : FlutterActivity() {
         setIntent(intent)
         if (!::actions.isInitialized) actions = HomeActions(this)
         actions.handleStartViaWadbIntent(intent)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        emitHomeChanged()
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -170,6 +166,9 @@ class FlutterHostActivity : FlutterActivity() {
         val emit = Runnable {
             try {
                 if (isDestroyed) return@Runnable
+                val dartExecuting = flutterEngine?.dartExecutor?.isExecutingDart == true
+                val hostResumed = lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+                if (!shouldEmitHomeEvent(dartExecuting, hostResumed, triggeredByHostResume = false)) return@Runnable
                 eventSink?.success("changed")
             } catch (_: Throwable) {
             }

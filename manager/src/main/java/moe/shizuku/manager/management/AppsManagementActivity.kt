@@ -35,7 +35,7 @@ class AppsManagementActivity : AppActivity() {
         }
 
         viewModel.packages.observe(this) {
-            if (it.status == Status.ERROR) {
+            if (it.status == Status.ERROR && !isFinishing) {
                 finish()
                 val tr = it.error
                 Toast.makeText(this, Objects.toString(tr, "unknown"), Toast.LENGTH_SHORT).show()
@@ -57,6 +57,7 @@ class AppsManagementActivity : AppActivity() {
                         } else {
                             AuthorizationManager.grant(packageInfo.packageName, uid)
                         }
+                        GrantedCountCache.value = -1
                         ToggleResult.Success
                     } catch (e: SecurityException) {
                         val shizukuUid = try {
@@ -93,8 +94,8 @@ class AppsManagementActivity : AppActivity() {
     }
 
     override fun onDestroy() {
+        GrantedCountCache.value = -1
         super.onDestroy()
-
         Shizuku.removeBinderDeadListener(binderDeadListener)
     }
 

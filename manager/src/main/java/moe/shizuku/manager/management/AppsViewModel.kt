@@ -42,6 +42,7 @@ class AppsViewModel(context: Context) : ViewModel() {
                 }
                 if (!onlyCount) _packages.postValue(Resource.success(list))
                 _grantedCount.postValue(Resource.success(count))
+                GrantedCountCache.value = count
             } catch (_: CancellationException) {
 
             } catch (e: Throwable) {

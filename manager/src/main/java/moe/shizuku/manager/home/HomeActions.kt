@@ -27,6 +27,8 @@ import moe.shizuku.manager.adb.AdbMdns
 import moe.shizuku.manager.adb.AdbPairingService
 import moe.shizuku.manager.adb.AdbWirelessHelper
 import moe.shizuku.manager.management.AppsManagementActivity
+import moe.shizuku.manager.management.GrantedCountCache
+import moe.shizuku.manager.management.resolveGrantedCount
 import moe.shizuku.manager.receiver.BootCompleteReceiver
 import moe.shizuku.manager.receiver.WifiReadyMonitor
 import moe.shizuku.manager.settings.SettingsActivity
@@ -358,18 +360,20 @@ class HomeActions(private val activity: Activity) {
     }
 
     private fun grantedCount(): Int {
-        if (!Shizuku.pingBinder()) return -1
-        return try {
-            var count = 0
-            for (pi in moe.shizuku.manager.authorization.AuthorizationManager.getPackages()) {
-                val uid = pi.applicationInfo?.uid ?: continue
-                if (moe.shizuku.manager.authorization.AuthorizationManager.granted(pi.packageName, uid)) {
-                    count++
+        return resolveGrantedCount(GrantedCountCache.value) {
+            if (!Shizuku.pingBinder()) return@resolveGrantedCount -1
+            try {
+                var count = 0
+                for (pi in moe.shizuku.manager.authorization.AuthorizationManager.getPackages()) {
+                    val uid = pi.applicationInfo?.uid ?: continue
+                    if (moe.shizuku.manager.authorization.AuthorizationManager.granted(pi.packageName, uid)) {
+                        count++
+                    }
                 }
+                count
+            } catch (_: Throwable) {
+                -1
             }
-            count
-        } catch (_: Throwable) {
-            -1
         }
     }
 
