@@ -94,7 +94,7 @@ private fun ApplicationManagementContent(
             grantStates[key] = AuthorizationManager.granted(packageInfo.packageName, uid)
             key
         }.toSet()
-        grantStates.keys.removeAll { it !in currentKeys }
+        grantStates.keys.filter { it !in currentKeys }.forEach { grantStates.remove(it) }
     }
 
     Scaffold(

@@ -65,6 +65,11 @@
 -keep class moe.shizuku.manager.flutter.FlutterHostActivity { *; }
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }
+-keep class androidx.compose.runtime.collection.** { *; }
+-keep class androidx.compose.runtime.snapshots.** { *; }
+-keepclassmembers class androidx.compose.runtime.collection.MutableVector { <methods>; }
+-keepclassmembers class androidx.compose.runtime.snapshots.SnapshotStateList { <methods>; }
+-keepclassmembers class androidx.compose.runtime.snapshots.SnapshotStateMap { <methods>; }
 -dontwarn io.flutter.embedding.**
 -dontwarn io.flutter.plugin.**
 -dontwarn android.**
