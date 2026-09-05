@@ -57,7 +57,7 @@ Manifest 删掉 `.MainActivity` / `AppsManagementActivity` / `AdbPairingTutorial
 
 ## 下一步唯一动作
 
-1. ~~提交~~ 已提交：`d826285 feat(manager): finish Ultra Flutter skin P2-P4 and retire Compose pages`（52 文件）+ `eccf97a docs(migration): add Compose-to-Flutter migration spec, rulebook and ledger`（89 文件）；JDK 固定与本文件更新在其后的 `chore(gradle)` 提交。未推送。
+1. ~~提交~~ 已提交并推送到 `origin/main`：`d826285 feat(manager)` + `eccf97a docs(migration)` + `4fea150 chore(gradle)` + `2015fdb docs(readme)` + `a594cef chore(release): bump manager to V15.2.0`。已发布 GitHub Release [V15.2.0](https://github.com/asrtroh-netizen/shizuku/releases/tag/V15.2.0)（资产 `shizuku-V15.2.0-release.apk`，SHA256 `b46acfcdbb902eb2a243ae9c3fe004b93204aca75c9b0392156ea3283c231449`；发布说明里明确标注真机验收未做）。应用内 UpdateChecker 读 `releases/latest` 会看到它。
 2. 把 `manager/build/outputs/apk/debug/shizuku-vV15.1.3-debug.apk`（或 release 包）装真机验收（SPEC §4 最终判据）：底栏 4 Tab 可切；应用 Tab 授权数与首页一致、切换授权生效、ADB 受限弹窗；设置 7 项副作用生效、改语言后回到设置 Tab、系统"应用信息 → 设置"能进设置 Tab；终端导出可用；配对流程能进系统配对且权限请求正常；第三方 Shizuku 客户端仍能连、授权弹窗仍是原生。
 3. 若真机发现问题：按 `CHANGE_MANIFEST.md` 定位批次，修 RULEBOOK 再重生成对应分片（不逐文件手补）。
 
