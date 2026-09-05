@@ -23,10 +23,11 @@ This is a **fork** of Shizuku. If you are looking for the official Shizuku devel
   - **One-tap Notification Start**: Optimized the Wireless ADB pairing process. After successful pairing, users can start the service directly from the system notification without returning to the app.
   - **TV Device Optimization**: Tailored startup logic and UI layout for Android TV and set-top boxes, ensuring compatibility with remote control operations.
 
-- **Modern Visual Experience**:
-  - **Material 3 UI**: Completely rewritten settings and management interfaces using **Jetpack Compose**, featuring smoother animations and more intuitive interaction logic.
-  - **Dynamic Colors (Material You)**: Full support for Android 12+ dynamic color systems; the interface tone automatically adjusts to your system wallpaper.
-  - **Pure Black Dark Mode**: Added a "Pure Black" theme option for OLED screens, providing extreme visual contrast and effective power saving.
+- **Flutter Manager UI (V15.2.0+)**:
+  - **OneIMS Ultra skin**: The whole manager shell is now a **Flutter** module (`manager_flutter/`) using the OneIMS Ultra black-and-white liquid-glass design — Montserrat type, glass panels, a floating 4-tab dock (Home / Apps / Terminal / Settings) and a dot-matrix status face that smiles when the service is up and frowns when it is not.
+  - **Nothing privileged moved**: only the visible shell changed. The Shizuku server, starter, `rish`, ADB pairing service, watchdog, boot receivers and the system permission dialog are all still native Kotlin; Flutter only talks to them through method channels. Package name stays `moe.shizuku.privileged.api`, so already-authorized client apps keep working.
+  - **Pure Black Dark Mode**: "Pure Black" theme option for OLED screens is still available in Settings.
+  - **In-app update check**: Home can check this repository's GitHub Releases and download the newest APK.
 
 ## Usage Guide
 
@@ -73,9 +74,22 @@ Refer to: <https://github.com/RikkaApps/Shizuku-API>
 
 ### Build
 - Clone with `git clone --recurse-submodules`.
-- Run gradle task `:manager:assembleDebug` or `:manager:assembleRelease`.
+- Requirements: JDK 21 (the Gradle wrapper picks an installed JDK 21 automatically via `gradle/gradle-daemon-jvm.properties`), Flutter 3.44+ stable.
+- Build the Flutter shell first — the host consumes it as a local Maven AAR, not as a source module:
+  ```
+  cd manager_flutter
+  flutter pub get
+  flutter build aar --no-profile
+  ```
+- Then run gradle task `:manager:assembleDebug` or `:manager:assembleRelease` from the repository root.
+- Tests: `flutter test` inside `manager_flutter/`, and `gradlew :manager:testDebugUnitTest` at the root.
 
 The `:manager:assembleDebug` task generates a debuggable server. You can attach a debugger to the `shizuku_server` process. Ensure "Always install with package manager" is checked in Android Studio settings.
+
+### Repository layout for the UI
+- `manager_flutter/lib/nav/` — app shell and glass dock; `lib/home`, `lib/apps`, `lib/terminal`, `lib/settings`, `lib/pairing` — one folder per screen (`*_models.dart`, `*_channel.dart`, `*_screen.dart`).
+- `manager/src/main/java/moe/shizuku/manager/flutter/` — `FlutterHostActivity` (the only launcher Activity) and one `*Channel.kt` per screen; all business logic lives here and in `HomeActions.kt`.
+- `migration/` — the plan, rulebook and verification ledger used for the Compose → Flutter migration.
 
 ## License
 Licensed under Apache 2.0.

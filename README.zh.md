@@ -24,7 +24,11 @@
   - **一键式通知启动**：优化无线侦错配对流程，在成功配对后，使用者可直接从系统通知栏点击启动，无需返回应用介面。
   - **TV 装置适配**：针对 Android TV 与电视盒装置优化启动逻辑，并调整介面布局以适配遥控器操作。
 
-- **全新现代化视觉体验**：使用 **Jetpack Compose** 完全重构设定与管理介面，带来更流畅的动画与更直观的操作逻辑。
+- **Flutter 管家界面（V15.2.0 起）**：
+  - **OneIMS Ultra 皮肤**：整个管家壳改为 **Flutter** 模块（`manager_flutter/`），沿用 OneIMS Ultra 的黑白液态玻璃设计——Montserrat 字体、玻璃面板、悬浮 4 项底栏（首页 / 应用 / 终端 / 设置），以及一张点阵脸：服务在跑就笑，没跑就皱眉。
+  - **提权部分一行没动**：只换了看得见的壳。Shizuku server、starter、`rish`、ADB 配对服务、Watchdog、开机自启 Receiver 和系统授权弹窗仍是原生 Kotlin，Flutter 只通过 MethodChannel 调它们。包名仍是 `moe.shizuku.privileged.api`，已授权的客户端 App 不受影响。
+  - **纯黑夜间模式**：设置里仍可开 OLED 纯黑主题。
+  - **应用内检查更新**：首页可直接检查本仓库的 GitHub Releases 并下载最新 APK。
 
 ### 自启动功能用法
 
@@ -111,9 +115,23 @@ Shizuku 最重要的功能，是扮演一个中介者：接收来自应用的请
 ### 构建 (Build)
 
 - 使用 `git clone --recurse-submodules` 复制仓库（包含子模组）。
-- 在 Android Studio 中执行 Gradle 任务 `:manager:assembleDebug` 或 `:manager:assembleRelease`。
+- 环境：JDK 21（Gradle wrapper 会通过 `gradle/gradle-daemon-jvm.properties` 自动选用本机已装的 JDK 21，不必手动设 `JAVA_HOME`）、Flutter 3.44+ stable。
+- 先构建 Flutter 壳——宿主以本地 Maven AAR 方式消费它，而不是源码模块：
+  ```
+  cd manager_flutter
+  flutter pub get
+  flutter build aar --no-profile
+  ```
+- 再在仓库根目录执行 Gradle 任务 `:manager:assembleDebug` 或 `:manager:assembleRelease`。
+- 测试：`manager_flutter/` 下 `flutter test`；仓库根目录 `gradlew :manager:testDebugUnitTest`。
 
 `:manager:assembleDebug` 任务会生成一个可调试的伺服器。您可以将调试器附加到 `shizuku_server` 程序进行调试。请注意，在 Android Studio 中应勾选 "Run/Debug configurations" -> "Always install with package manager"，以确保使用最新代码。
+
+### 界面代码怎么分布
+
+- `manager_flutter/lib/nav/`：应用壳与玻璃底栏；`lib/home`、`lib/apps`、`lib/terminal`、`lib/settings`、`lib/pairing` 每个页面一个目录（`*_models.dart` / `*_channel.dart` / `*_screen.dart`）。
+- `manager/src/main/java/moe/shizuku/manager/flutter/`：`FlutterHostActivity`（唯一的 Launcher Activity）和每个页面对应的 `*Channel.kt`；业务逻辑全在这里和 `HomeActions.kt`。
+- `migration/`：这次 Compose → Flutter 迁移用的计划书、规则手册和验证账本。
 
 ## 授权条款 (License)
 
