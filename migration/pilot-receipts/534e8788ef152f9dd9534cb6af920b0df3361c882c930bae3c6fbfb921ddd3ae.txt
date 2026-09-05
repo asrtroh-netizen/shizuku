@@ -1,0 +1,13 @@
+gate_key=534e8788ef152f9dd9534cb6af920b0df3361c882c930bae3c6fbfb921ddd3ae
+candidate_sha256=61a043cdfe2bcd4ef8f4352508b0b7ba23da93b2010af9fad8c3f63e149d4707
+migration/items/A1-liquid-glass.md	migration/evidence/wave4/gradle-assemble-debug-release.log	f77f638e25ad753f6f3d2793ceda13301753b5d0e3f1c386ee7a764215c47a1f
+migration/items/A2-glass-dock.md	migration/evidence/wave4/gradle-assemble-debug-release.log	f77f638e25ad753f6f3d2793ceda13301753b5d0e3f1c386ee7a764215c47a1f
+migration/items/A3-glass-choice-dialog.md	migration/evidence/wave4/gradle-assemble-debug-release.log	f77f638e25ad753f6f3d2793ceda13301753b5d0e3f1c386ee7a764215c47a1f
+migration/items/A4-app-shell.md	migration/evidence/wave4/gradle-assemble-debug-release.log	f77f638e25ad753f6f3d2793ceda13301753b5d0e3f1c386ee7a764215c47a1f
+migration/items/A5-app-shell-test.md	migration/evidence/wave4/gradle-assemble-debug-release.log	f77f638e25ad753f6f3d2793ceda13301753b5d0e3f1c386ee7a764215c47a1f
+migration/items/B1-apps-channel-kt.md	migration/evidence/wave4/gradle-assemble-debug-release.log	f77f638e25ad753f6f3d2793ceda13301753b5d0e3f1c386ee7a764215c47a1f
+migration/items/B2-apps-models.md	migration/evidence/wave4/gradle-assemble-debug-release.log	f77f638e25ad753f6f3d2793ceda13301753b5d0e3f1c386ee7a764215c47a1f
+migration/items/B3-apps-channel-dart.md	migration/evidence/wave4/gradle-assemble-debug-release.log	f77f638e25ad753f6f3d2793ceda13301753b5d0e3f1c386ee7a764215c47a1f
+migration/items/B4-apps-screen.md	migration/evidence/wave4/gradle-assemble-debug-release.log	f77f638e25ad753f6f3d2793ceda13301753b5d0e3f1c386ee7a764215c47a1f
+migration/items/B5-apps-screen-test.md	migration/evidence/wave4/gradle-assemble-debug-release.log	f77f638e25ad753f6f3d2793ceda13301753b5d0e3f1c386ee7a764215c47a1f
+migration/items/B6-apps-channel-kt-test.md	migration/evidence/wave4/gradle-assemble-debug-release.log	f77f638e25ad753f6f3d2793ceda13301753b5d0e3f1c386ee7a764215c47a1f

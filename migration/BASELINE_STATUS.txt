@@ -1,0 +1,12 @@
+ M docs/oneims-ultra-flutter-skin-plan.md
+ M manager/src/main/java/androidx/lifecycle/rikkax_lifecycle_ViewModel.java
+ M manager/src/main/java/moe/shizuku/manager/flutter/HomeEventGate.kt
+ M manager/src/main/java/moe/shizuku/manager/management/GrantStates.kt
+ M manager/src/main/java/moe/shizuku/manager/ui/widget/DotMatrixFace.kt
+ M manager/src/test/java/moe/shizuku/manager/flutter/HomeEventGateTest.kt
+ M manager/src/test/java/moe/shizuku/manager/management/GrantStatesTest.kt
+ M manager_flutter/lib/home/home_channel.dart
+ M manager_flutter/lib/home/home_models.dart
+ M manager_flutter/lib/theme/app_theme.dart
+ M manager_flutter/test/home_hero_face_test.dart
+?? .xj-cursor/

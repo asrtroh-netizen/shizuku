@@ -1,0 +1,8 @@
+tool	resolved_path	locked_version	content_sha256	version_output	official_doc	checked_on
+git	C:/Program Files/Git/cmd/git.exe	2.54.0.windows.1	-	git version 2.54.0.windows.1	https://git-scm.com/docs	2026-09-05
+ripgrep	d:/MINE/cursor/resources/app/node_modules/@vscode/ripgrep/bin/rg.exe	15.1.0-cursor5	-	ripgrep 15.1.0-cursor5 (rev c3e3c2f7ec)	https://github.com/BurntSushi/ripgrep	2026-09-05
+jdk	C:/Program Files/Microsoft/jdk-21.0.11.10-hotspot	21.0.11	-	openjdk version "21.0.11" 2026-04-21 LTS	https://learn.microsoft.com/java/openjdk/	2026-09-05
+gradle-wrapper	gradle/wrapper/gradle-wrapper.jar	gradle-8.14.4-bin.zip validateDistributionUrl=true	7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172	(wrapper; run with JAVA_HOME=JDK21)	https://docs.gradle.org/8.14.4/userguide/	2026-09-05
+flutter	C:/Flutter/flutter/bin/flutter.bat	3.44.9 stable	-	Flutter 3.44.9	https://docs.flutter.dev/add-to-app/android/project-setup	2026-09-05
+dart	C:/Flutter/flutter/bin/dart.bat	3.12.2	-	Dart SDK version: 3.12.2 (stable) (Tue Jun 9 01:11:39 2026 -0700) on "windows_x64"	https://dart.dev/tools	2026-09-05
+pubspec.lock	manager_flutter/pubspec.lock	(locked; no changes allowed)	712660f9eaf1b9b986139388c1d9d988f0da39e279d5ad9b02d576b7db02f72d	-	https://dart.dev/tools/pub/dependencies	2026-09-05

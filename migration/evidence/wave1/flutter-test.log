@@ -1,0 +1,30 @@
+﻿Resolving dependencies...
+Downloading packages...
+  clock 1.1.2 (1.1.3 available)
+  matcher 0.12.19 (0.12.20 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.0 (1.19.0 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.11 (0.7.14 available)
+  vector_math 2.2.0 (2.4.2 available)
+  vm_service 15.2.0 (15.3.0 available)
+Got dependencies!
+8 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading E:/GQ/Ultra/Shizuku/manager_flutter/test/apps_screen_test.dart
+00:00 +0: E:/GQ/Ultra/Shizuku/manager_flutter/test/apps_screen_test.dart: no host: fallback notRunning card renders, nothing crashes
+00:01 +1: E:/GQ/Ultra/Shizuku/manager_flutter/test/app_shell_test.dart: no host: shell renders dock with fallback labels and home hero
+00:01 +2: E:/GQ/Ultra/Shizuku/manager_flutter/test/app_shell_test.dart: no host: shell renders dock with fallback labels and home hero
+00:01 +3: E:/GQ/Ultra/Shizuku/manager_flutter/test/app_shell_test.dart: no host: shell renders dock with fallback labels and home hero
+00:01 +4: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_hero_face_test.dart: home keeps original sections when service is down
+00:01 +5: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_hero_face_test.dart: home keeps original sections when service is down
+00:01 +6: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:02 +7: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:02 +8: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:02 +9: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:02 +10: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:02 +11: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:02 +12: E:/GQ/Ultra/Shizuku/manager_flutter/test/app_shell_test.dart: tapping a destination switches tab; home stays alive
+00:02 +13: E:/GQ/Ultra/Shizuku/manager_flutter/test/app_shell_test.dart: home apps tile switches to the Apps tab instead of openApps
+00:03 +14: E:/GQ/Ultra/Shizuku/manager_flutter/test/app_shell_test.dart: bad input: non-string tabApps falls back to "Apps"
+00:03 +15: All tests passed!
