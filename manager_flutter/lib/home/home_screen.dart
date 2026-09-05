@@ -9,7 +9,18 @@ import 'package:manager_flutter/onetools/one_status_hero.dart';
 
 /// 原 Compose 首页的整页换皮：门面 / 无线 / 快捷 / 开机 / 更新 / Lang+日月。
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({
+    super.key,
+    this.onOpenApps,
+    this.onOpenTerminal,
+    this.onOpenSettings,
+    this.onOpenPairing,
+  });
+
+  final VoidCallback? onOpenApps;
+  final VoidCallback? onOpenTerminal;
+  final VoidCallback? onOpenSettings;
+  final VoidCallback? onOpenPairing;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -126,7 +137,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       ),
                       if (snap.showPair)
                         OutlinedButton.icon(
-                          onPressed: () => _call('openPairing'),
+                          onPressed: () {
+                            if (widget.onOpenPairing != null) {
+                              widget.onOpenPairing!();
+                            } else {
+                              _call('openPairing');
+                            }
+                          },
                           icon: const Icon(Icons.link, size: 18),
                           label: Text(copy.pairing),
                         ),
@@ -207,7 +224,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         showCancel: canOpen,
       ),
     );
-    if (go == true && canOpen) await _call('openApps');
+    if (go == true && canOpen) {
+      if (widget.onOpenApps != null) {
+        widget.onOpenApps!();
+      } else {
+        await _call('openApps');
+      }
+    }
   }
 
   Future<void> _onTerminal() async {
@@ -224,7 +247,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         showCancel: true,
       ),
     );
-    if (go == true && enabled) await _call('openTerminal');
+    if (go == true && enabled) {
+      if (widget.onOpenTerminal != null) {
+        widget.onOpenTerminal!();
+      } else {
+        await _call('openTerminal');
+      }
+    }
   }
 
   Future<void> _onRoot() async {

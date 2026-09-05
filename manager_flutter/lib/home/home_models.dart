@@ -43,6 +43,10 @@ class HomeCopy {
     required this.themeDark,
     required this.ok,
     required this.cancel,
+    required this.tabHome,
+    required this.tabApps,
+    required this.tabTerminal,
+    required this.tabSettings,
   });
 
   final String appName;
@@ -88,6 +92,10 @@ class HomeCopy {
   final String themeDark;
   final String ok;
   final String cancel;
+  final String tabHome;
+  final String tabApps;
+  final String tabTerminal;
+  final String tabSettings;
 
   static const HomeCopy fallback = HomeCopy(
     appName: 'Shizuku',
@@ -133,6 +141,10 @@ class HomeCopy {
     themeDark: 'Dark',
     ok: 'OK',
     cancel: 'Cancel',
+    tabHome: 'Shizuku',
+    tabApps: 'Apps',
+    tabTerminal: 'Terminal',
+    tabSettings: 'Settings',
   );
 
   factory HomeCopy.fromJson(Map<String, dynamic>? json) {
@@ -187,6 +199,10 @@ class HomeCopy {
       themeDark: pick('themeDark', f.themeDark),
       ok: pick('ok', f.ok),
       cancel: pick('cancel', f.cancel),
+      tabHome: pick('tabHome', f.tabHome),
+      tabApps: pick('tabApps', f.tabApps),
+      tabTerminal: pick('tabTerminal', f.tabTerminal),
+      tabSettings: pick('tabSettings', f.tabSettings),
     );
   }
 }

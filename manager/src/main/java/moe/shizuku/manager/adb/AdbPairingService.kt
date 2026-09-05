@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
-import moe.shizuku.manager.home.HomeActivity
+import moe.shizuku.manager.flutter.FlutterHostActivity
 import rikka.core.ktx.unsafeLazy
 import java.net.ConnectException
 
@@ -260,7 +260,7 @@ class AdbPairingService : Service() {
     }
 
     private val launchIntent by unsafeLazy {
-        Intent(this, moe.shizuku.manager.flutter.FlutterHostActivity::class.java).apply {
+        Intent(this, FlutterHostActivity::class.java).apply {
             addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK or
                         Intent.FLAG_ACTIVITY_CLEAR_TOP or
@@ -280,7 +280,7 @@ class AdbPairingService : Service() {
 
     private val startNotificationAction by unsafeLazy {
         val startIntent = Intent(launchIntent)
-            .putExtra(HomeActivity.EXTRA_START_SERVICE_VIA_WADB, true)
+            .putExtra(FlutterHostActivity.EXTRA_START_SERVICE_VIA_WADB, true)
         val pendingIntent = PendingIntent.getActivity(
             this,
             START_REQUEST_ID,

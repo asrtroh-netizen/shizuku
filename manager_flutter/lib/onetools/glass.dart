@@ -77,6 +77,14 @@ abstract final class Glass {
   /// 顶栏/底栏这类 chrome 的模糊强度。
   static const double blurBar = 24;
 
+  /// 液态玻璃 chrome（悬浮底栏）的模糊。比 [blurBar] 轻，避免糊成磨砂牛奶。
+  ///
+  /// 配方对齐 Backdrop：color filter → blur(≈8–10) → lens。列表卡 / Hero 禁止用这个值。
+  static const double blurLiquid = 10;
+
+  /// 透镜：把已模糊的背景相对中心放大的比例。0.04 = 4%。
+  static const double liquidRefraction = 0.04;
+
   static const double strokeWidth = 0.8;
 
   /// 顶栏与模态面的透明度下限。
@@ -117,6 +125,65 @@ abstract final class Glass {
   static Color blurredBarFill(ColorScheme scheme, bool dark) => dark
       ? scheme.surfaceContainerHighest.withValues(alpha: 0.34)
       : scheme.surface.withValues(alpha: 0.60);
+
+  /// 液态玻璃可读性罩：比 [fillStrong] 透，让折射后的背景露出来。
+  ///
+  /// 彩色主题叠一层很低的 primary，相当于 Backdrop 的 vibrancy；
+  /// 中性黑白不染色，避免把玻璃抹灰。
+  static Color liquidFill(ColorScheme scheme, bool dark) {
+    final base = blurredBarFill(scheme, dark);
+    if (_isNeutralAccent(scheme)) return base;
+    return Color.alphaBlend(
+      scheme.primary.withValues(alpha: dark ? 0.10 : 0.06),
+      base,
+    );
+  }
+
+  /// 顶边高光 + 底边内阴影：没有 RuntimeShader 时的透镜高光替代。
+  static LinearGradient liquidHighlight(bool dark) {
+    return LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: dark
+          ? <Color>[
+              Colors.white.withValues(alpha: 0.16),
+              Colors.white.withValues(alpha: 0.02),
+              Colors.black.withValues(alpha: 0.12),
+            ]
+          : <Color>[
+              Colors.white.withValues(alpha: 0.38),
+              Colors.white.withValues(alpha: 0.06),
+              Colors.black.withValues(alpha: 0.05),
+            ],
+      stops: const <double>[0, 0.42, 1],
+    );
+  }
+
+  /// 液态取样滤镜：先模糊，再绕中心轻微放大（透镜）。
+  ///
+  /// [size] 未知或空时只返回模糊，避免无限约束下用错矩阵原点。
+  static ImageFilter liquidBackdropFilter(
+    Size size, {
+    double blur = blurLiquid,
+    double refraction = liquidRefraction,
+  }) {
+    final blurFilter = ImageFilter.blur(
+      sigmaX: blur,
+      sigmaY: blur,
+      tileMode: TileMode.clamp,
+    );
+    if (size.isEmpty || size.isInfinite || refraction <= 0) {
+      return blurFilter;
+    }
+    final matrix = Matrix4.identity()
+      ..translateByDouble(size.width / 2, size.height / 2, 0, 1)
+      ..scaleByDouble(1.0 + refraction, 1.0 + refraction, 1, 1)
+      ..translateByDouble(-size.width / 2, -size.height / 2, 0, 1);
+    return ImageFilter.compose(
+      inner: blurFilter,
+      outer: ImageFilter.matrix(matrix.storage),
+    );
+  }
 
   /// 模态面（底部弹层/抽屉/菜单）：内容盖在花哨界面上，最需要实。
   static Color modalFill(ColorScheme scheme, bool dark) =>

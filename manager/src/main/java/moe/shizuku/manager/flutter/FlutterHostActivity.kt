@@ -26,6 +26,10 @@ class FlutterHostActivity : FlutterActivity() {
     private val ioScope = CoroutineScope(Dispatchers.IO)
     private lateinit var actions: HomeActions
 
+    // 保存为字段：选择器 / 权限请求期间进程被杀，重建后结果回调紧随 onCreate 派发。
+    private lateinit var terminalChannel: TerminalChannel
+    private lateinit var pairingChannel: PairingChannel
+
     private var eventSink: EventChannel.EventSink? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -52,10 +56,53 @@ class FlutterHostActivity : FlutterActivity() {
         actions.handleStartViaWadbIntent(intent)
     }
 
+    /**
+     * 设置页改语言/主题后宿主 recreate，通道会先把目标 Tab 写进 intent（RULEBOOK §10 GAP-7）；
+     * 这里转成 Dart 初始路由 `/tab/<n>`，读完即删，免得后续配置变更重建也回到设置页。
+     * 系统"应用设置"入口（`APPLICATION_PREFERENCES`，原由 Compose `SettingsActivity` 承接）直接落到设置 Tab。
+     */
+    override fun getInitialRoute(): String? {
+        if (intent?.action == Intent.ACTION_APPLICATION_PREFERENCES) return "/tab/3"
+        val tab = intent?.getIntExtra(EXTRA_TAB, -1) ?: -1
+        if (tab !in 0..3) return super.getInitialRoute()
+        intent.removeExtra(EXTRA_TAB)
+        return "/tab/$tab"
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::pairingChannel.isInitialized) pairingChannel.onHostResumed()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (::terminalChannel.isInitialized) {
+            terminalChannel.onActivityResult(requestCode, resultCode, data)
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (::pairingChannel.isInitialized) {
+            pairingChannel.onRequestPermissionsResult(requestCode, grantResults)
+        }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         if (!::actions.isInitialized) actions = HomeActions(this)
         val messenger = flutterEngine.dartExecutor.binaryMessenger
+
+        AppsChannel(this, ioScope).register(messenger)
+        SettingsChannel(this, ioScope).register(messenger)
+        terminalChannel = TerminalChannel(this, ioScope)
+        terminalChannel.register(messenger)
+        pairingChannel = PairingChannel(this, ioScope)
+        pairingChannel.register(messenger)
 
         MethodChannel(messenger, HOME_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
@@ -69,10 +116,6 @@ class FlutterHostActivity : FlutterActivity() {
                         }
                     }
                 }
-                "openApps" -> runAction(result, "openApps") { actions.openApps() }
-                "openTerminal" -> runAction(result, "openTerminal") { actions.openTerminal() }
-                "openSettings" -> runAction(result, "openSettings") { actions.openSettings() }
-                "openPairing" -> runAction(result, "openPairing") { actions.openPairing() }
                 "openWirelessGuide" -> runAction(result, "openWirelessGuide") { actions.openWirelessGuide() }
                 "openAdbPermissionHelp" -> runAction(result, "openAdbPermissionHelp") { actions.openAdbPermissionHelp() }
                 "startRoot" -> runAction(result, "startRoot") { actions.startRoot() }
@@ -205,5 +248,9 @@ class FlutterHostActivity : FlutterActivity() {
     companion object {
         const val HOME_CHANNEL = "shizuku/home"
         const val HOME_EVENTS = "shizuku/home/events"
+        /** 与 SettingsChannel 里的字面量一致（RULEBOOK §10）。 */
+        const val EXTRA_TAB = "moe.shizuku.manager.extra.TAB"
+        /** 配对成功通知的"启动"动作带此 extra；字符串值沿用原 Compose `HomeActivity`，旧通知的 PendingIntent 仍有效。 */
+        const val EXTRA_START_SERVICE_VIA_WADB = "moe.shizuku.manager.extra.START_SERVICE_VIA_WADB"
     }
 }

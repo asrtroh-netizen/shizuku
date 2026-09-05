@@ -1,0 +1,338 @@
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:manager_flutter/apps/apps_channel.dart';
+import 'package:manager_flutter/apps/apps_models.dart';
+import 'package:manager_flutter/onetools/glass.dart';
+
+/// 原 Compose `AppsManagementActivity` 的整页换皮：授权应用列表（底栏 Tab，无返回箭头）。
+///
+/// 业务逻辑全部在 Kotlin（`shizuku/apps`）：这里只画快照、转发点击。
+/// 服务未运行时渲染占位卡、不渲染列表（GAP-3）；图标按需经 `getIcon` 拉 PNG 并按键缓存（GAP-4）。
+/// 不订阅任何 EventChannel（RULEBOOK §9 刷新时机）：`AppShell` 每次切到本 Tab 都用新 `ValueKey`
+/// 重建本页，加上 `initState` 拉一次、`resumed` 重拉、`toggle` 直接带回快照，共同保证新鲜度。
+class AppsScreen extends StatefulWidget {
+  const AppsScreen({super.key});
+
+  @override
+  State<AppsScreen> createState() => _AppsScreenState();
+}
+
+class _AppsScreenState extends State<AppsScreen> with WidgetsBindingObserver {
+  static const double _iconDp = 40;
+
+  AppsSnapshot _snap = AppsSnapshot.empty;
+  int _refreshSeq = 0;
+
+  /// 图标缓存，键 = [appKey]；值为 null 表示已请求但失败（显示占位图标）。
+  final Map<String, Uint8List?> _icons = <String, Uint8List?>{};
+  final Set<String> _iconRequests = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refresh();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final seq = ++_refreshSeq;
+    final map = await AppsChannel.getState();
+    if (!mounted || seq != _refreshSeq) return;
+    setState(() => _snap = AppsSnapshot.fromJson(map));
+  }
+
+  Future<void> _toggle(AppRow row) async {
+    final map = await AppsChannel.toggle(row.packageName, row.uid);
+    if (!mounted) return;
+    if (map.containsKey('running') || map.containsKey('copy')) {
+      // 写操作直接带回整页快照；让在途的 getState 作废，免得旧快照盖掉新状态。
+      _refreshSeq++;
+      setState(() => _snap = AppsSnapshot.fromJson(map));
+    } else {
+      await _refresh();
+    }
+    if (map['result'] != 'adbLimited' || !mounted) return;
+    final copy = _snap.copy;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => _GlassAlert(
+        icon: Icons.info_outline,
+        title: copy.adbLimitedTitle,
+        body: copy.adbLimitedMessage,
+        confirmLabel: copy.ok,
+      ),
+    );
+  }
+
+  void _ensureIcon(AppRow row, int sizePx) {
+    final key = appKey(row);
+    if (_icons.containsKey(key) || !_iconRequests.add(key)) return;
+    AppsChannel.getIcon(row.packageName, row.uid, sizePx).then((bytes) {
+      if (!mounted) return;
+      setState(() => _icons[key] = bytes);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final snap = _snap;
+    final copy = snap.copy;
+    final rows = snap.running ? snap.apps : const <AppRow>[];
+    final String? notice = !snap.running
+        ? copy.notRunning
+        : (rows.isEmpty ? copy.empty : null);
+    final sizePx =
+        (_iconDp * MediaQuery.devicePixelRatioOf(context)).round();
+    final itemCount = 1 + (notice != null ? 1 : rows.length);
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        bottom: false,
+        child: ListView.separated(
+          padding: EdgeInsets.fromLTRB(
+            Glass.pageMargin,
+            Glass.space12,
+            Glass.pageMargin,
+            glassDockScrollPadding(context),
+          ),
+          itemCount: itemCount,
+          separatorBuilder: (_, _) => const SizedBox(height: Glass.cardGap),
+          itemBuilder: (context, index) {
+            if (index == 0) return _Header(title: copy.title);
+            if (notice != null) return _NoticeCard(text: notice);
+            final row = rows[index - 1];
+            _ensureIcon(row, sizePx);
+            return _AppCard(
+              row: row,
+              icon: _icons[appKey(row)],
+              iconSize: _iconDp,
+              requiresRootLabel: copy.requiresRoot,
+              onToggle: () => _toggle(row),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(title, style: Theme.of(context).textTheme.titleLarge);
+  }
+}
+
+/// 占位 / 空状态卡（对齐 Compose `EmptyState`）：一张玻璃卡 + info 图标 + 文案。
+class _NoticeCard extends StatelessWidget {
+  const _NoticeCard({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GlassPanel(
+      padding: const EdgeInsets.all(Glass.padCard),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.info_outline,
+            size: 48,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: Glass.space12),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 列表行：主题 `Card`（`Glass.apply` 已给半透明填充 + 发丝边，无模糊），
+/// 不用 `GlassPanel`（RULEBOOK §3.2 v1.1）。外边距归零，让行宽与页头 / 占位卡对齐、
+/// 行距只由 `Glass.cardGap` 决定。
+class _AppCard extends StatelessWidget {
+  const _AppCard({
+    required this.row,
+    required this.icon,
+    required this.iconSize,
+    required this.requiresRootLabel,
+    required this.onToggle,
+  });
+
+  final AppRow row;
+  final Uint8List? icon;
+  final double iconSize;
+  final String requiresRootLabel;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final text = theme.textTheme;
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Glass.space20,
+            vertical: 18,
+          ),
+          child: Row(
+            children: [
+              _AppIcon(bytes: icon, size: iconSize),
+              const SizedBox(width: Glass.space16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(row.label, style: text.titleMedium),
+                    const SizedBox(height: Glass.space4),
+                    Text(
+                      row.packageName,
+                      style: text.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                    ),
+                    if (row.requiresRoot) ...[
+                      const SizedBox(height: Glass.space6),
+                      Text(
+                        requiresRootLabel,
+                        style: text.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Switch(value: row.granted, onChanged: (_) => onToggle()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppIcon extends StatelessWidget {
+  const _AppIcon({required this.bytes, required this.size});
+
+  final Uint8List? bytes;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = this.bytes;
+    final fallback = Icon(
+      Icons.android_outlined,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(Glass.radiusTile),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: bytes == null
+            ? fallback
+            : Image.memory(
+                bytes,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+                errorBuilder: (_, _, _) => fallback,
+              ),
+      ),
+    );
+  }
+}
+
+/// 确认类弹窗（同 `home_screen.dart` 的 `_GlassAlert` 模式，私有复制）。
+/// 「ADB 受限」按 Compose 原样走 `errorContainer` 底 + info 图标。
+class _GlassAlert extends StatelessWidget {
+  const _GlassAlert({
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.confirmLabel,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+  final String confirmLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final text = theme.textTheme;
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Material(
+        color: cs.errorContainer,
+        borderRadius: BorderRadius.circular(Glass.radiusHero),
+        child: Padding(
+          padding: const EdgeInsets.all(Glass.padCard),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Icon(icon, color: cs.onErrorContainer),
+              const SizedBox(height: Glass.space12),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: text.titleMedium?.copyWith(color: cs.onErrorContainer),
+              ),
+              const SizedBox(height: Glass.space12),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 240),
+                child: SingleChildScrollView(
+                  child: Text(
+                    body,
+                    style: text.bodyMedium?.copyWith(color: cs.onErrorContainer),
+                  ),
+                ),
+              ),
+              const SizedBox(height: Glass.space16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: cs.onErrorContainer,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(confirmLabel),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

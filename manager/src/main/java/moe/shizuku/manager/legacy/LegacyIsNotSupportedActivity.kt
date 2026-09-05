@@ -5,9 +5,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.compose.setContent
-import moe.shizuku.manager.MainActivity
 import moe.shizuku.manager.R
 import moe.shizuku.manager.app.AppActivity
+import moe.shizuku.manager.flutter.FlutterHostActivity
 import rikka.html.text.HtmlCompat
 
 class LegacyIsNotSupportedActivity : AppActivity() {
@@ -64,7 +64,7 @@ class LegacyIsNotSupportedActivity : AppActivity() {
                         finish()
                     },
                     onSecondary = {
-                        startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        startActivity(Intent(this, FlutterHostActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                     }
                 )
             }

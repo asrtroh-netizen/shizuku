@@ -26,13 +26,11 @@ import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.adb.AdbMdns
 import moe.shizuku.manager.adb.AdbPairingService
 import moe.shizuku.manager.adb.AdbWirelessHelper
-import moe.shizuku.manager.management.AppsManagementActivity
+import moe.shizuku.manager.flutter.FlutterHostActivity
 import moe.shizuku.manager.management.GrantedCountCache
 import moe.shizuku.manager.management.resolveGrantedCount
 import moe.shizuku.manager.receiver.BootCompleteReceiver
 import moe.shizuku.manager.receiver.WifiReadyMonitor
-import moe.shizuku.manager.settings.SettingsActivity
-import moe.shizuku.manager.shell.ShellTutorialActivity
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.starter.StarterActivity
 import moe.shizuku.manager.update.UpdateChecker
@@ -48,33 +46,15 @@ import rikka.shizuku.manager.ShizukuLocales
 import java.util.Locale
 
 /**
- * 原 Compose 首页的全部动作。Flutter 换皮和 [HomeActivity] 共用这一份，避免两套逻辑。
+ * 原 Compose 首页的全部动作，现在只服务 Flutter 换皮宿主（Compose 首页已下线，P4-1 起不再注册入口）。
  */
 class HomeActions(private val activity: Activity) {
 
     fun handleStartViaWadbIntent(intent: Intent?) {
-        if (intent?.getBooleanExtra(HomeActivity.EXTRA_START_SERVICE_VIA_WADB, false) != true) return
+        if (intent?.getBooleanExtra(FlutterHostActivity.EXTRA_START_SERVICE_VIA_WADB, false) != true) return
         val nm = activity.getSystemService(NotificationManager::class.java)
         nm.cancel(AdbPairingService.NOTIFICATION_ID)
         startWirelessAdb()
-    }
-
-    fun openApps() {
-        activity.startActivity(Intent(activity, AppsManagementActivity::class.java))
-    }
-
-    fun openTerminal() {
-        activity.startActivity(Intent(activity, ShellTutorialActivity::class.java))
-    }
-
-    fun openSettings() {
-        activity.startActivity(Intent(activity, SettingsActivity::class.java))
-    }
-
-    fun openPairing() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            activity.startActivity(Intent(activity, moe.shizuku.manager.adb.AdbPairingTutorialActivity::class.java))
-        }
     }
 
     fun openWirelessGuide() {
@@ -333,6 +313,10 @@ class HomeActions(private val activity: Activity) {
             .put("themeDark", c.getString(R.string.home_theme_dark))
             .put("ok", c.getString(android.R.string.ok))
             .put("cancel", c.getString(android.R.string.cancel))
+            .put("tabHome", c.getString(R.string.app_name))
+            .put("tabApps", c.getString(R.string.home_app_management_title))
+            .put("tabTerminal", c.getString(R.string.home_terminal_title_plain))
+            .put("tabSettings", c.getString(R.string.settings_title))
     }
 
     private fun localeArray(): JSONArray {

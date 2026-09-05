@@ -80,11 +80,6 @@
             android:value="2" />
 
         <activity
-            android:name=".MainActivity"
-            android:banner="@mipmap/banner"
-            android:exported="true"
-            android:launchMode="singleTop" />
-        <activity
             android:name=".flutter.FlutterHostActivity"
             android:banner="@mipmap/banner"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
@@ -98,20 +93,6 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-        <activity
-            android:name=".management.AppsManagementActivity"
-            android:label="@string/home_app_management_title" />
-        <activity
-            android:name=".adb.AdbPairingTutorialActivity"
-            android:label="@string/adb_pairing" />
-        <activity
-            android:name=".shell.ShellTutorialActivity"
-            android:label="@string/home_terminal_title" />
-        <activity
-            android:name=".settings.SettingsActivity"
-            android:exported="false"
-            android:label="@string/settings_title">
             <intent-filter>
                 <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
             </intent-filter>
