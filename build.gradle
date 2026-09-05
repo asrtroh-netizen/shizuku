@@ -28,6 +28,6 @@ subprojects {
 apply from: 'api/manifest.gradle.kts'
 // App release identity (manager / shell). API protocol version stays in api/manifest.gradle.kts.
 ext {
-    versionCode = 151003
-    versionName = "V15.1.3"
+    versionCode = 152000
+    versionName = "V15.2.0"
 }
