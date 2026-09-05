@@ -57,10 +57,10 @@ Manifest 删掉 `.MainActivity` / `AppsManagementActivity` / `AdbPairingTutorial
 
 ## 下一步唯一动作
 
-1. 用户决定是否 `git add` / `commit` 当前成果（Wave 1–3 + P4-1 + P4-2；协调者未做任何 git 写操作；工作树有 15 个 `D`、6 个 `M`（内容级）、28 个新源文件 + `migration/`）。
+1. ~~提交~~ 已提交：`d826285 feat(manager): finish Ultra Flutter skin P2-P4 and retire Compose pages`（52 文件）+ `eccf97a docs(migration): add Compose-to-Flutter migration spec, rulebook and ledger`（89 文件）；JDK 固定与本文件更新在其后的 `chore(gradle)` 提交。未推送。
 2. 把 `manager/build/outputs/apk/debug/shizuku-vV15.1.3-debug.apk`（或 release 包）装真机验收（SPEC §4 最终判据）：底栏 4 Tab 可切；应用 Tab 授权数与首页一致、切换授权生效、ADB 受限弹窗；设置 7 项副作用生效、改语言后回到设置 Tab、系统"应用信息 → 设置"能进设置 Tab；终端导出可用；配对流程能进系统配对且权限请求正常；第三方 Shizuku 客户端仍能连、授权弹窗仍是原生。
 3. 若真机发现问题：按 `CHANGE_MANIFEST.md` 定位批次，修 RULEBOOK 再重生成对应分片（不逐文件手补）。
 
 ## 续跑方法（新会话）
 
-读 `MIGRATION_SPEC.md` → 读本文件 → 校验 `STATE_VERSION.tsv` 各制品哈希 → 重扫 manifest 目标与 `VERIFY_LEDGER.tsv` 重建四桶队列 → 按 `CURRENT_BATCH_MODE` 继续。Gradle 必须以 JDK 21 运行（`$env:JAVA_HOME='C:\Program Files\Microsoft\jdk-21.0.11.10-hotspot'`）。
+读 `MIGRATION_SPEC.md` → 读本文件 → 校验 `STATE_VERSION.tsv` 各制品哈希 → 重扫 manifest 目标与 `VERIFY_LEDGER.tsv` 重建四桶队列 → 按 `CURRENT_BATCH_MODE` 继续。Gradle 现已通过 `gradle/gradle-daemon-jvm.properties` 自动选用本机 JDK 21，不再需要手动设 `JAVA_HOME`。
