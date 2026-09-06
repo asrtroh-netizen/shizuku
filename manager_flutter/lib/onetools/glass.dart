@@ -45,6 +45,12 @@ abstract final class Glass {
   /// 岛与屏幕底（含系统手势条之上）的空隙。
   static const double dockBottomGap = 8;
 
+  /// 底栏每一项的目标宽度。两项时按这个收成居中胶囊，不再拉满屏。
+  static const double dockItemWidth = 108;
+
+  /// 胶囊左右内留白（加在 `n * dockItemWidth` 之外）。
+  static const double dockBarInset = 8;
+
   // ── 间距标度（8pt 栅格）：全局统一，改这里等于调所有页面的疏密 ──
   //
   // 此前项目里至少三套间距并行（Glass 的 12/18、AppPaddings 的 16、门面卡自带的
@@ -524,6 +530,15 @@ double glassDockScrollPadding(BuildContext context) {
       Glass.dockBottomGap +
       MediaQuery.viewPaddingOf(context).bottom +
       Glass.space16;
+}
+
+/// 悬浮底栏玻璃岛宽度：按目的地数量收窄，且不超过屏宽减去左右 [Glass.pageMargin]。
+double glassDockIslandWidth(int destinationCount, double screenWidth) {
+  final wanted =
+      destinationCount * Glass.dockItemWidth + Glass.dockBarInset * 2;
+  final maxW = screenWidth - Glass.pageMargin * 2;
+  if (maxW <= 0) return 0;
+  return wanted > maxW ? maxW : wanted;
 }
 
 /// 列表底部留白：推入页（可 pop）只垫手势条；底栏 Tab 仍避让悬浮 Dock。

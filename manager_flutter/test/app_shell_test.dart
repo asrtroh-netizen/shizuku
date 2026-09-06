@@ -7,6 +7,8 @@ import 'package:manager_flutter/apps/apps_screen.dart';
 import 'package:manager_flutter/home/home_screen.dart';
 import 'package:manager_flutter/nav/app_shell.dart';
 import 'package:manager_flutter/nav/glass_dock.dart';
+import 'package:manager_flutter/onetools/glass.dart';
+import 'package:manager_flutter/onetools/liquid_glass.dart';
 import 'package:manager_flutter/onetools/one_status_hero.dart';
 import 'package:manager_flutter/settings/settings_screen.dart';
 import 'package:manager_flutter/theme/app_theme.dart';
@@ -70,6 +72,12 @@ int stackIndex(WidgetTester tester) =>
     tester.widget<IndexedStack>(find.byType(IndexedStack)).index!;
 
 void main() {
+  test('glassDockIslandWidth is compact for two destinations', () {
+    expect(glassDockIslandWidth(2, 400), Glass.dockItemWidth * 2 + Glass.dockBarInset * 2);
+    expect(glassDockIslandWidth(2, 400), lessThan(400 - Glass.pageMargin * 2));
+    expect(glassDockIslandWidth(8, 400), 400 - Glass.pageMargin * 2);
+  });
+
   testWidgets(
     'no host: shell renders two-item dock and home hero',
     (tester) async {
@@ -92,6 +100,17 @@ void main() {
       expect(find.byType(OneStatusHero), findsOneWidget);
     },
   );
+
+  testWidgets('two-item dock island is compact and centered', (tester) async {
+    mockHome(state: null);
+    await pumpShell(tester);
+
+    final island = tester.getRect(find.byType(LiquidGlass));
+    final shell = tester.getRect(find.byType(AppShell));
+    expect(island.width, glassDockIslandWidth(2, shell.width));
+    expect(island.width, lessThan(shell.width - Glass.pageMargin * 2));
+    expect((island.center.dx - shell.center.dx).abs(), lessThan(1));
+  });
 
   testWidgets('tapping settings switches tab; home stays alive', (
     tester,

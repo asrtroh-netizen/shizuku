@@ -5,6 +5,7 @@ import 'package:manager_flutter/onetools/liquid_glass.dart';
 /// 悬浮液态玻璃底栏：胶囊岛 + 轻模糊 + 轻微透镜，内容从两侧透出。
 ///
 /// 内部仍用 [NavigationBar]，保留 M3 无障碍与既有 widget 测试的 `find.byType`。
+/// 岛宽按目的地数量收窄并水平居中，两项时不再拉满屏。
 ///
 /// [NavigationBar] 自带 SafeArea。岛已经用外层 padding 抬离手势条，必须把底部
 /// padding 吃掉，否则岛会被垫高一截、胶囊被拉成长条。
@@ -25,57 +26,65 @@ class GlassDock extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final islandW = glassDockIslandWidth(
+      destinations.length,
+      MediaQuery.sizeOf(context).width,
+    );
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        Glass.pageMargin,
-        0,
-        Glass.pageMargin,
-        Glass.dockBottomGap + bottomInset,
-      ),
-      child: LiquidGlass(
-        radius: Glass.radiusDock,
-        child: MediaQuery.removePadding(
-          context: context,
-          removeBottom: true,
-          child: Theme(
-            data: theme.copyWith(
-              navigationBarTheme: theme.navigationBarTheme.copyWith(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                shadowColor: Colors.transparent,
-                surfaceTintColor: Colors.transparent,
-                indicatorColor: scheme.primary.withValues(alpha: 0.18),
-                overlayColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.pressed)) {
-                    return scheme.primary.withValues(alpha: 0.10);
-                  }
-                  return Colors.transparent;
-                }),
-                iconTheme: WidgetStateProperty.resolveWith((states) {
-                  final selected = states.contains(WidgetState.selected);
-                  return IconThemeData(
-                    size: 22,
-                    color: selected ? scheme.primary : scheme.onSurfaceVariant,
-                  );
-                }),
-                labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                  final selected = states.contains(WidgetState.selected);
-                  return theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: selected ? scheme.primary : scheme.onSurfaceVariant,
-                  );
-                }),
+      padding: EdgeInsets.only(bottom: Glass.dockBottomGap + bottomInset),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: SizedBox(
+          width: islandW,
+          child: LiquidGlass(
+            radius: Glass.radiusDock,
+            child: MediaQuery.removePadding(
+              context: context,
+              removeBottom: true,
+              child: Theme(
+                data: theme.copyWith(
+                  navigationBarTheme: theme.navigationBarTheme.copyWith(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                    surfaceTintColor: Colors.transparent,
+                    indicatorColor: scheme.primary.withValues(alpha: 0.18),
+                    overlayColor: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.pressed)) {
+                        return scheme.primary.withValues(alpha: 0.10);
+                      }
+                      return Colors.transparent;
+                    }),
+                    iconTheme: WidgetStateProperty.resolveWith((states) {
+                      final selected = states.contains(WidgetState.selected);
+                      return IconThemeData(
+                        size: 22,
+                        color:
+                            selected ? scheme.primary : scheme.onSurfaceVariant,
+                      );
+                    }),
+                    labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                      final selected = states.contains(WidgetState.selected);
+                      return theme.textTheme.labelSmall?.copyWith(
+                        fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.w500,
+                        color:
+                            selected ? scheme.primary : scheme.onSurfaceVariant,
+                      );
+                    }),
+                  ),
+                ),
+                child: NavigationBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                  surfaceTintColor: Colors.transparent,
+                  height: Glass.dockHeight,
+                  selectedIndex: selectedIndex,
+                  onDestinationSelected: onDestinationSelected,
+                  destinations: destinations,
+                ),
               ),
-            ),
-            child: NavigationBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              shadowColor: Colors.transparent,
-              surfaceTintColor: Colors.transparent,
-              height: Glass.dockHeight,
-              selectedIndex: selectedIndex,
-              onDestinationSelected: onDestinationSelected,
-              destinations: destinations,
             ),
           ),
         ),
