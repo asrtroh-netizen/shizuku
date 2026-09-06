@@ -5,6 +5,7 @@ import 'package:manager_flutter/home/home_screen.dart';
 import 'package:manager_flutter/nav/glass_dock.dart';
 import 'package:manager_flutter/onetools/glass.dart';
 import 'package:manager_flutter/pairing/pairing_screen.dart';
+import 'package:manager_flutter/widgets/glass_notice_card.dart';
 
 /// 应用壳：悬浮液态玻璃 Dock + [IndexedStack] 保活 4 页（首页 / 应用 / 终端 / 设置）。
 ///
@@ -42,7 +43,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   late final Widget _home = HomeScreen(
     onOpenApps: () => _select(1),
     onOpenTerminal: () => _select(2),
-    onOpenSettings: () => _select(3),
     onOpenPairing: _openPairing,
   );
 
@@ -141,7 +141,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   }
 }
 
-/// 尚未接入真实页面的 Tab 占位：一张玻璃卡 + 沙漏 + 该 Tab 的标签。
+/// 尚未接入真实页面的 Tab 占位：一张玻璃提示卡 + 沙漏 + 该 Tab 的标签。
 class _PlaceholderTab extends StatelessWidget {
   const _PlaceholderTab({required this.label});
 
@@ -149,36 +149,17 @@ class _PlaceholderTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return SafeArea(
+      bottom: false,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(
+        padding: EdgeInsets.fromLTRB(
           Glass.pageMargin,
           Glass.space12,
           Glass.pageMargin,
-          Glass.space24,
+          glassDockScrollPadding(context),
         ),
         children: [
-          GlassPanel(
-            padding: const EdgeInsets.all(Glass.padCard),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.hourglass_empty_outlined,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: Glass.space12),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          GlassNoticeCard(icon: Icons.hourglass_empty_outlined, text: label),
         ],
       ),
     );

@@ -26,7 +26,9 @@ import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.adb.AdbMdns
 import moe.shizuku.manager.adb.AdbPairingService
 import moe.shizuku.manager.adb.AdbWirelessHelper
-import moe.shizuku.manager.flutter.FlutterHostActivity
+import moe.shizuku.manager.flutter.BootPrefs
+import moe.shizuku.manager.flutter.LocaleLabels
+import moe.shizuku.manager.flutter.applyBootToggle
 import moe.shizuku.manager.management.GrantedCountCache
 import moe.shizuku.manager.management.resolveGrantedCount
 import moe.shizuku.manager.receiver.BootCompleteReceiver
@@ -37,7 +39,6 @@ import moe.shizuku.manager.update.UpdateChecker
 import moe.shizuku.manager.utils.CustomTabsHelper
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.watchdog.WatchdogService
-import org.json.JSONArray
 import org.json.JSONObject
 import rikka.core.util.ClipboardUtils
 import rikka.material.app.LocaleDelegate
@@ -50,8 +51,9 @@ import java.util.Locale
  */
 class HomeActions(private val activity: Activity) {
 
-    fun handleStartViaWadbIntent(intent: Intent?) {
-        if (intent?.getBooleanExtra(FlutterHostActivity.EXTRA_START_SERVICE_VIA_WADB, false) != true) return
+    /** 配对成功通知的"启动"动作：宿主读 `EXTRA_START_SERVICE_VIA_WADB` 后传入 [requested]。 */
+    fun handleStartViaWadb(requested: Boolean) {
+        if (!requested) return
         val nm = activity.getSystemService(NotificationManager::class.java)
         nm.cancel(AdbPairingService.NOTIFICATION_ID)
         startWirelessAdb()
@@ -121,11 +123,10 @@ class HomeActions(private val activity: Activity) {
     }
 
     fun setBootRoot(checked: Boolean) {
-        saveBool(ShizukuSettings.KEEP_START_ON_BOOT, checked)
-        if (checked) saveBool(ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, false)
-        val wireless = ShizukuSettings.getPreferences()
-            .getBoolean(ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, false)
-        setBootReceiverEnabled(checked || wireless)
+        val next = applyBootToggle(currentBootPrefs(), ShizukuSettings.KEEP_START_ON_BOOT, checked)
+        saveBool(ShizukuSettings.KEEP_START_ON_BOOT, next.bootRoot)
+        saveBool(ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, next.bootWireless)
+        setBootReceiverEnabled(next.bootRoot || next.bootWireless)
     }
 
     fun setBootWireless(checked: Boolean): JSONObject {
@@ -142,11 +143,10 @@ class HomeActions(private val activity: Activity) {
                     activity.getString(R.string.wireless_boot_permission_tooltip) + "\n\n" + grantCmd,
                 )
         }
-        saveBool(ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, checked)
-        if (checked) saveBool(ShizukuSettings.KEEP_START_ON_BOOT, false)
-        val root = ShizukuSettings.getPreferences()
-            .getBoolean(ShizukuSettings.KEEP_START_ON_BOOT, false)
-        setBootReceiverEnabled(checked || root)
+        val next = applyBootToggle(currentBootPrefs(), ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, checked)
+        saveBool(ShizukuSettings.KEEP_START_ON_BOOT, next.bootRoot)
+        saveBool(ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, next.bootWireless)
+        setBootReceiverEnabled(next.bootRoot || next.bootWireless)
         if (checked) WifiReadyMonitor.ensureRegistered(activity)
         else WifiReadyMonitor.unregister(activity)
         return JSONObject().put("ok", true)
@@ -224,123 +224,102 @@ class HomeActions(private val activity: Activity) {
             false
         }
         val grantedCount = grantedCount()
-        val rooted = EnvironmentUtils.isRooted()
         val prefs = ShizukuSettings.getPreferences()
-        val bootRoot = prefs.getBoolean(ShizukuSettings.KEEP_START_ON_BOOT, false)
-        val bootWireless = prefs.getBoolean(ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, false)
-        val watchdog = prefs.getBoolean(ShizukuSettings.WATCHDOG_ENABLED_ADB, false)
-        val showWireless =
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || EnvironmentUtils.getAdbTcpPort() > 0
-        val appsSub = when {
-            !running -> activity.getString(R.string.home_checks_apps_sub_waiting)
-            grantedCount < 0 -> activity.getString(R.string.home_app_management_binder_unavailable)
-            else -> activity.resources.getQuantityString(
+        val facts = HomeFacts(
+            running = running,
+            uid = uid,
+            permission = permission,
+            grantedCount = grantedCount,
+            rooted = EnvironmentUtils.isRooted(),
+            sdkAtLeastR = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R,
+            adbTcpPort = EnvironmentUtils.getAdbTcpPort(),
+            bootRoot = prefs.getBoolean(ShizukuSettings.KEEP_START_ON_BOOT, false),
+            bootWireless = prefs.getBoolean(ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, false),
+            watchdog = prefs.getBoolean(ShizukuSettings.WATCHDOG_ENABLED_ADB, false),
+            dark = isDarkThemeActive(),
+            adbCommand = Starter.adbCommand,
+        )
+        val texts = HomeTexts(
+            appsWaiting = activity.getString(R.string.home_checks_apps_sub_waiting),
+            appsUnavailable = activity.getString(R.string.home_app_management_binder_unavailable),
+            appsCount = activity.resources.getQuantityString(
                 R.plurals.home_app_management_authorized_apps_count,
                 grantedCount,
                 grantedCount,
-            )
-        }
-        val rootSub = when {
-            !rooted -> activity.getString(R.string.home_root_tile_unavailable)
-            running && uid == 0 -> activity.getString(R.string.home_root_button_restart)
-            else -> activity.getString(R.string.home_root_button_start)
-        }
-        return JSONObject()
-            .put("running", running)
-            .put("state", if (running) "ready" else "inactive")
-            .put("uid", uid)
-            .put("permission", permission)
-            .put("grantedCount", grantedCount)
-            .put("rooted", rooted)
-            .put("rootRestart", running && uid == 0)
-            .put("showWireless", showWireless)
-            .put("showPair", Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-            .put("bootRoot", bootRoot)
-            .put("bootWireless", bootWireless)
-            .put("watchdog", watchdog)
-            .put("dark", isDarkThemeActive())
-            .put("adbLimited", running && !permission)
-            .put("adbCommand", Starter.adbCommand)
-            .put("appsSub", appsSub)
-            .put("rootSub", rootSub)
-            .put("locales", localeArray())
-            .put("copy", copyJson())
+            ),
+            rootUnavailable = activity.getString(R.string.home_root_tile_unavailable),
+            rootRestart = activity.getString(R.string.home_root_button_restart),
+            rootStart = activity.getString(R.string.home_root_button_start),
+        )
+        return JSONObject(buildHomeStateMap(facts, texts, localeArray(), copyMap()))
     }
 
-    private fun copyJson(): JSONObject {
+    private fun copyMap(): Map<String, Any?> {
         val c = activity
-        return JSONObject()
-            .put("appName", c.getString(R.string.app_name))
-            .put("heroEyebrow", c.getString(R.string.home_hero_eyebrow))
-            .put("heroTitleInactive", c.getString(R.string.home_hero_title_inactive))
-            .put("heroPillInactive", c.getString(R.string.home_hero_pill_inactive))
-            .put("heroPillReady", c.getString(R.string.home_hero_pill_ready))
-            .put("heroSubtitle", c.getString(R.string.home_hero_subtitle_inactive))
-            .put("heroDetail", c.getString(R.string.home_hero_detail_inactive))
-            .put("stageInactive", c.getString(R.string.home_hero_stage_inactive))
-            .put("stageReady", c.getString(R.string.home_hero_stage_ready))
-            .put("quickTitle", c.getString(R.string.home_quick_entry_title))
-            .put("wirelessTitle", c.getString(R.string.home_wireless_adb_title_plain))
-            .put("wirelessGuide", c.getString(R.string.home_wireless_adb_view_guide_button))
-            .put("pairing", c.getString(R.string.adb_pairing))
-            .put("start", c.getString(R.string.home_root_button_start))
-            .put("restart", c.getString(R.string.home_root_button_restart))
-            .put("bootTitle", c.getString(R.string.home_capsule_boot))
-            .put("bootConfigure", c.getString(R.string.home_boot_configure))
-            .put("bootRoot", c.getString(R.string.settings_start_on_boot))
-            .put("bootWireless", c.getString(R.string.settings_start_on_boot_wireless))
-            .put("watchdog", c.getString(R.string.settings_watchdog_adb))
-            .put("appsTitle", c.getString(R.string.home_app_management_title))
-            .put("appsOpen", c.getString(R.string.home_app_management_view_authorized_apps))
-            .put("terminalTitle", c.getString(R.string.home_terminal_title_plain))
-            .put("terminalSub", c.getString(R.string.home_terminal_tile_sub))
-            .put("terminalBody", c.getString(R.string.home_terminal_description))
-            .put("terminalOff", c.getString(R.string.home_status_service_not_running, c.getString(R.string.app_name)))
-            .put("rootTitle", c.getString(R.string.home_root_title_plain))
-            .put("rootConfirm", c.getString(R.string.home_root_tile_confirm))
-            .put("rootUnavailable", c.getString(R.string.home_root_tile_unavailable_detail))
-            .put("adbTitle", c.getString(R.string.home_adb_tile_title))
-            .put("adbSub", c.getString(R.string.home_checks_adb_sub))
-            .put("adbViewCommand", c.getString(R.string.home_adb_button_view_command))
-            .put("adbCopy", c.getString(R.string.home_adb_dialog_view_command_copy_button))
-            .put("adbSend", c.getString(R.string.home_adb_dialog_view_command_button_send))
-            .put("adbLimited", c.getString(R.string.home_adb_is_limited_title))
-            .put("checkUpdate", c.getString(R.string.home_check_update))
-            .put("checkingUpdate", c.getString(R.string.home_checking_update))
-            .put("lang", c.getString(R.string.home_lang_chip))
-            .put("language", c.getString(R.string.settings_language))
-            .put("themeLight", c.getString(R.string.home_theme_light))
-            .put("themeDark", c.getString(R.string.home_theme_dark))
-            .put("ok", c.getString(android.R.string.ok))
-            .put("cancel", c.getString(android.R.string.cancel))
-            .put("tabHome", c.getString(R.string.app_name))
-            .put("tabApps", c.getString(R.string.home_app_management_title))
-            .put("tabTerminal", c.getString(R.string.home_terminal_title_plain))
-            .put("tabSettings", c.getString(R.string.settings_title))
+        return linkedMapOf(
+            "appName" to c.getString(R.string.app_name),
+            "heroEyebrow" to c.getString(R.string.home_hero_eyebrow),
+            "heroTitleInactive" to c.getString(R.string.home_hero_title_inactive),
+            "heroPillInactive" to c.getString(R.string.home_hero_pill_inactive),
+            "heroPillReady" to c.getString(R.string.home_hero_pill_ready),
+            "heroSubtitle" to c.getString(R.string.home_hero_subtitle_inactive),
+            "heroDetail" to c.getString(R.string.home_hero_detail_inactive),
+            "stageInactive" to c.getString(R.string.home_hero_stage_inactive),
+            "stageReady" to c.getString(R.string.home_hero_stage_ready),
+            "quickTitle" to c.getString(R.string.home_quick_entry_title),
+            "wirelessTitle" to c.getString(R.string.home_wireless_adb_title_plain),
+            "wirelessGuide" to c.getString(R.string.home_wireless_adb_view_guide_button),
+            "pairing" to c.getString(R.string.adb_pairing),
+            "start" to c.getString(R.string.home_root_button_start),
+            "restart" to c.getString(R.string.home_root_button_restart),
+            "bootTitle" to c.getString(R.string.home_capsule_boot),
+            "bootConfigure" to c.getString(R.string.home_boot_configure),
+            "bootRoot" to c.getString(R.string.settings_start_on_boot),
+            "bootWireless" to c.getString(R.string.settings_start_on_boot_wireless),
+            "watchdog" to c.getString(R.string.settings_watchdog_adb),
+            "appsTitle" to c.getString(R.string.home_app_management_title),
+            "appsOpen" to c.getString(R.string.home_app_management_view_authorized_apps),
+            "terminalTitle" to c.getString(R.string.home_terminal_title_plain),
+            "terminalSub" to c.getString(R.string.home_terminal_tile_sub),
+            "terminalBody" to c.getString(R.string.home_terminal_description),
+            "terminalOff" to c.getString(R.string.home_status_service_not_running, c.getString(R.string.app_name)),
+            "rootTitle" to c.getString(R.string.home_root_title_plain),
+            "rootConfirm" to c.getString(R.string.home_root_tile_confirm),
+            "rootUnavailable" to c.getString(R.string.home_root_tile_unavailable_detail),
+            "adbTitle" to c.getString(R.string.home_adb_tile_title),
+            "adbSub" to c.getString(R.string.home_checks_adb_sub),
+            "adbViewCommand" to c.getString(R.string.home_adb_button_view_command),
+            "adbCopy" to c.getString(R.string.home_adb_dialog_view_command_copy_button),
+            "adbSend" to c.getString(R.string.home_adb_dialog_view_command_button_send),
+            "adbLimited" to c.getString(R.string.home_adb_is_limited_title),
+            "checkUpdate" to c.getString(R.string.home_check_update),
+            "checkingUpdate" to c.getString(R.string.home_checking_update),
+            "lang" to c.getString(R.string.home_lang_chip),
+            "language" to c.getString(R.string.settings_language),
+            "themeLight" to c.getString(R.string.home_theme_light),
+            "themeDark" to c.getString(R.string.home_theme_dark),
+            "ok" to c.getString(android.R.string.ok),
+            "cancel" to c.getString(android.R.string.cancel),
+            "tabHome" to c.getString(R.string.nav_home),
+            "tabApps" to c.getString(R.string.nav_apps),
+            "tabTerminal" to c.getString(R.string.home_terminal_title_plain),
+            "tabSettings" to c.getString(R.string.settings_title),
+        )
     }
 
-    private fun localeArray(): JSONArray {
-        val tags = ShizukuLocales.LOCALES
+    private fun localeArray(): List<Map<String, Any?>> {
         val current = ShizukuSettings.getPreferences().getString(ShizukuSettings.LANGUAGE, "SYSTEM") ?: "SYSTEM"
-        val arr = JSONArray()
-        tags.forEachIndexed { index, tag ->
-            val label = if (index == 0) activity.getString(R.string.settings_language_system)
-            else when (tag) {
-                "zh-CN" -> "简体中文"
-                "zh-TW" -> "繁體中文"
-                "en" -> "English"
-                "ja" -> "日本語"
-                "ko" -> "한국어"
-                else -> tag
-            }
-            arr.put(
-                JSONObject()
-                    .put("tag", tag)
-                    .put("label", label)
-                    .put("selected", tag == current),
+        return LocaleLabels.rows(
+            ShizukuLocales.LOCALES.toList(),
+            current,
+            activity.getString(R.string.settings_language_system),
+        ).map { row ->
+            linkedMapOf<String, Any?>(
+                "tag" to row.tag,
+                "label" to row.label,
+                "selected" to row.selected,
             )
         }
-        return arr
     }
 
     private fun grantedCount(): Int {
@@ -451,6 +430,14 @@ class HomeActions(private val activity: Activity) {
                 night == Configuration.UI_MODE_NIGHT_YES
             }
         }
+    }
+
+    private fun currentBootPrefs(): BootPrefs {
+        val prefs = ShizukuSettings.getPreferences()
+        return BootPrefs(
+            bootRoot = prefs.getBoolean(ShizukuSettings.KEEP_START_ON_BOOT, false),
+            bootWireless = prefs.getBoolean(ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, false),
+        )
     }
 
     private fun saveBool(key: String, value: Boolean) {

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:manager_flutter/apps/apps_channel.dart';
 import 'package:manager_flutter/apps/apps_models.dart';
 import 'package:manager_flutter/onetools/glass.dart';
+import 'package:manager_flutter/widgets/glass_alert.dart';
+import 'package:manager_flutter/widgets/glass_notice_card.dart';
 
 /// 原 Compose `AppsManagementActivity` 的整页换皮：授权应用列表（底栏 Tab，无返回箭头）。
 ///
@@ -67,11 +69,12 @@ class _AppsScreenState extends State<AppsScreen> with WidgetsBindingObserver {
     final copy = _snap.copy;
     await showDialog<void>(
       context: context,
-      builder: (ctx) => _GlassAlert(
-        icon: Icons.info_outline,
+      builder: (ctx) => GlassAlert(
         title: copy.adbLimitedTitle,
         body: copy.adbLimitedMessage,
         confirmLabel: copy.ok,
+        tone: GlassAlertTone.error,
+        icon: Icons.info_outline,
       ),
     );
   }
@@ -112,7 +115,9 @@ class _AppsScreenState extends State<AppsScreen> with WidgetsBindingObserver {
           separatorBuilder: (_, _) => const SizedBox(height: Glass.cardGap),
           itemBuilder: (context, index) {
             if (index == 0) return _Header(title: copy.title);
-            if (notice != null) return _NoticeCard(text: notice);
+            if (notice != null) {
+              return GlassNoticeCard(icon: Icons.info_outline, text: notice);
+            }
             final row = rows[index - 1];
             _ensureIcon(row, sizePx);
             return _AppCard(
@@ -137,37 +142,6 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(title, style: Theme.of(context).textTheme.titleLarge);
-  }
-}
-
-/// 占位 / 空状态卡（对齐 Compose `EmptyState`）：一张玻璃卡 + info 图标 + 文案。
-class _NoticeCard extends StatelessWidget {
-  const _NoticeCard({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GlassPanel(
-      padding: const EdgeInsets.all(Glass.padCard),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.info_outline,
-            size: 48,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(height: Glass.space12),
-          Text(
-            text,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyLarge,
-          ),
-        ],
-      ),
-    );
   }
 }
 
@@ -265,73 +239,6 @@ class _AppIcon extends StatelessWidget {
                 gaplessPlayback: true,
                 errorBuilder: (_, _, _) => fallback,
               ),
-      ),
-    );
-  }
-}
-
-/// 确认类弹窗（同 `home_screen.dart` 的 `_GlassAlert` 模式，私有复制）。
-/// 「ADB 受限」按 Compose 原样走 `errorContainer` 底 + info 图标。
-class _GlassAlert extends StatelessWidget {
-  const _GlassAlert({
-    required this.icon,
-    required this.title,
-    required this.body,
-    required this.confirmLabel,
-  });
-
-  final IconData icon;
-  final String title;
-  final String body;
-  final String confirmLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final text = theme.textTheme;
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Material(
-        color: cs.errorContainer,
-        borderRadius: BorderRadius.circular(Glass.radiusHero),
-        child: Padding(
-          padding: const EdgeInsets.all(Glass.padCard),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Icon(icon, color: cs.onErrorContainer),
-              const SizedBox(height: Glass.space12),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: text.titleMedium?.copyWith(color: cs.onErrorContainer),
-              ),
-              const SizedBox(height: Glass.space12),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 240),
-                child: SingleChildScrollView(
-                  child: Text(
-                    body,
-                    style: text.bodyMedium?.copyWith(color: cs.onErrorContainer),
-                  ),
-                ),
-              ),
-              const SizedBox(height: Glass.space16),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: cs.onErrorContainer,
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(confirmLabel),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

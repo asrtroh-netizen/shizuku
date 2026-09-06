@@ -133,4 +133,6 @@
 \n
 \n操作を有効にするために､ Shizukuを再起動する必要がある場合があります。</string>
     <string name="dialog_adb_discovery_message_toggle_wireless_debugging">検索され続ける場合は、「ワイヤレスデバッグ」の無効化と有効化をしてみてください。</string>
+    <string name="nav_home">ホーム</string>
+    <string name="nav_apps">アプリ</string>
 </resources>

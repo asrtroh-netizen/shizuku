@@ -8,6 +8,7 @@ import 'package:manager_flutter/pairing/pairing_channel.dart';
 import 'package:manager_flutter/pairing/pairing_models.dart';
 import 'package:manager_flutter/pairing/pairing_screen.dart';
 import 'package:manager_flutter/theme/app_theme.dart';
+import 'package:manager_flutter/widgets/glass_notice_card.dart';
 
 const MethodChannel _channel = MethodChannel('shizuku/pairing');
 
@@ -292,7 +293,7 @@ void main() {
     expect(find.text('Notification helps!'), findsNothing);
     expect(find.text('Step one!'), findsNothing);
     expect(find.byType(FilledButton), findsNothing);
-    expect(find.byType(GlassPanel), findsOneWidget);
+    expect(find.byType(GlassNoticeCard), findsOneWidget);
   });
 
   testWidgets(

@@ -3,13 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:manager_flutter/onetools/glass.dart';
 import 'package:manager_flutter/settings/settings_channel.dart';
 import 'package:manager_flutter/settings/settings_models.dart';
+import 'package:manager_flutter/widgets/glass_alert.dart';
 import 'package:manager_flutter/widgets/glass_choice_dialog.dart';
 
 /// 原 Compose `SettingsActivity` 的整页换皮：启动 / 语言 / 界面三组（底栏 Tab，无返回箭头）。
 ///
 /// 业务逻辑全部在 Kotlin（`shizuku/settings`）：这里只画快照、转发点击。
 /// 每组一张页面级 [GlassPanel]（共 3 张），组内每行是普通 Row（RULEBOOK §3.1 / §3.2 v1.1）。
-/// 语言 / 深色模式单选走 [GlassChoiceDialog]；缺权限 / 缺通知监听确认框复制首页 `_GlassAlert` 模式。
+/// 语言 / 深色模式单选走 [GlassChoiceDialog]；缺权限 / 缺通知监听确认框用共享 [GlassAlert]。
 /// 写操作直接用 Kotlin 带回的整页快照 `setState`；语言 / 夜间模式 / 主题类开关改后的宿主 `recreate()`
 /// 由 Kotlin 在回复之后自行调度（GAP-7），Dart 不处理。
 /// 不订阅 EventChannel：`AppShell` 每次切到本 Tab 都用新 `ValueKey` 重建本页，加上 `initState`
@@ -76,7 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       final grantCmd = raw is String ? raw : '';
       final manual = await showDialog<bool>(
         context: context,
-        builder: (ctx) => _GlassAlert(
+        builder: (ctx) => GlassAlert(
           title: copy.permissionMissing,
           body: '${copy.wirelessBootPermissionTooltip}\n\n$grantCmd',
           confirmLabel: copy.manual,
@@ -92,7 +93,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     } else if (map['needNotificationAccess'] == true) {
       final go = await showDialog<bool>(
         context: context,
-        builder: (ctx) => _GlassAlert(
+        builder: (ctx) => GlassAlert(
           title: copy.permissionMissing,
           body: copy.autoPairingNotificationAccessTooltip,
           confirmLabel: copy.ok,
@@ -399,63 +400,6 @@ class _ChoiceRow extends StatelessWidget {
           if (selected)
             Icon(Icons.check_outlined, color: theme.colorScheme.primary),
         ],
-      ),
-    );
-  }
-}
-
-/// 确认类弹窗（同 `home_screen.dart` 的 `_GlassAlert` 模式，私有复制）：
-/// 取消 → `false`，确认 → `true`。
-class _GlassAlert extends StatelessWidget {
-  const _GlassAlert({
-    required this.title,
-    required this.body,
-    required this.confirmLabel,
-    required this.cancelLabel,
-  });
-
-  final String title;
-  final String body;
-  final String confirmLabel;
-  final String cancelLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: GlassPanel(
-        radius: Glass.radiusHero,
-        padding: const EdgeInsets.all(Glass.padCard),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(title, style: text.titleMedium),
-            const SizedBox(height: Glass.space12),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 240),
-              child: SingleChildScrollView(
-                child: Text(body, style: text.bodyMedium),
-              ),
-            ),
-            const SizedBox(height: Glass.space16),
-            Wrap(
-              alignment: WrapAlignment.end,
-              spacing: Glass.space8,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text(cancelLabel),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: Text(confirmLabel),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }

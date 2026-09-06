@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:manager_flutter/onetools/glass.dart';
 import 'package:manager_flutter/pairing/pairing_channel.dart';
 import 'package:manager_flutter/pairing/pairing_models.dart';
+import 'package:manager_flutter/widgets/glass_notice_card.dart';
 
 /// 原 Compose `AdbPairingTutorialActivity` 的整页换皮：无线配对引导（**推入页**，顶部返回箭头）。
 ///
@@ -116,18 +117,9 @@ class _PairingScreenState extends State<PairingScreen>
   List<Widget> _cards(PairingSnapshot snap) {
     final copy = snap.copy;
     if (!snap.supported) {
-      // Activity 版整类 @RequiresApi(R)，没有对应文案；按 E4 用 copy.title 作占位（RULEBOOK §3.6 空状态形态）。
-      return [
-        _SectionPanel(
-          rows: [
-            _PairingRow(
-              kind: _RowKind.callout,
-              icon: Icons.info_outline,
-              title: copy.title,
-            ),
-          ],
-        ),
-      ];
+      // Activity 版整类 @RequiresApi(R)，没有对应文案；按 E4 用 copy.title 作占位
+      // （RULEBOOK §3.6 空状态形态，共享 [GlassNoticeCard]，R2 §R4）。
+      return [GlassNoticeCard(icon: Icons.info_outline, text: copy.title)];
     }
     final cards = <Widget>[
       _SectionPanel(rows: _statusRows(snap)),

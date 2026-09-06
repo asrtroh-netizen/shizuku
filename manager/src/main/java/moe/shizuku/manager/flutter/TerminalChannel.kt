@@ -14,7 +14,6 @@ import moe.shizuku.manager.Helps
 import moe.shizuku.manager.R
 import moe.shizuku.manager.utils.CustomTabsHelper
 import org.json.JSONObject
-import rikka.html.text.HtmlCompat
 
 /**
  * 整页快照（纯函数，零 Android 依赖，供 JUnit 直测）：`{ok, shName, dexName, copy}`。
@@ -38,7 +37,7 @@ internal fun buildTerminalStateJson(
  * 删旧 `rish` / `rish_shizuku.dex` → 从 assets 写入；查看指南 = `Helps.RISH`。
  *
  * copy key ↔ R.string（格式参数与 `ShellTutorialComposeScreen` 逐项相同；
- * `plainText` = HtmlCompat 去标签 + 折叠空白，`mono(x)` = `<font face="monospace">x</font>`）：
+ * `plainText` = [htmlToPlainText]（HtmlCompat 去标签 + 折叠空白），`mono(x)` = `<font face="monospace">x</font>`）：
  * - `title`                = `home_terminal_title`
  * - `back`                 = `action_back`
  * - `open`                 = `action_open`（Compose 里是说明卡尾部 OpenInNew 图标的 contentDescription）
@@ -149,12 +148,12 @@ class TerminalChannel(private val activity: Activity, private val scope: Corouti
             "title" to c.getString(R.string.home_terminal_title),
             "back" to c.getString(R.string.action_back),
             "open" to c.getString(R.string.action_open),
-            "rishDescription" to plainText(c.getString(R.string.rish_description, mono(SH_NAME))),
-            "tutorial1" to plainText(c.getString(R.string.terminal_tutorial_1, mono(SH_NAME), mono(DEX_NAME))),
+            "rishDescription" to htmlToPlainText(c.getString(R.string.rish_description, mono(SH_NAME))),
+            "tutorial1" to htmlToPlainText(c.getString(R.string.terminal_tutorial_1, mono(SH_NAME), mono(DEX_NAME))),
             "tutorial1Description" to c.getString(R.string.terminal_tutorial_1_description),
             "exportFiles" to c.getString(R.string.terminal_export_files),
-            "tutorial2" to plainText(c.getString(R.string.terminal_tutorial_2, mono(SH_NAME))),
-            "tutorial2Description" to plainText(
+            "tutorial2" to htmlToPlainText(c.getString(R.string.terminal_tutorial_2, mono(SH_NAME))),
+            "tutorial2Description" to htmlToPlainText(
                 c.getString(
                     R.string.terminal_tutorial_2_description,
                     "Termux",
@@ -163,8 +162,8 @@ class TerminalChannel(private val activity: Activity, private val scope: Corouti
                     mono("com.termux"),
                 ),
             ),
-            "tutorial3" to plainText(c.getString(R.string.terminal_tutorial_3, mono("sh $SH_NAME"))),
-            "tutorial3Description" to plainText(
+            "tutorial3" to htmlToPlainText(c.getString(R.string.terminal_tutorial_3, mono("sh $SH_NAME"))),
+            "tutorial3Description" to htmlToPlainText(
                 c.getString(R.string.terminal_tutorial_3_description, mono(SH_NAME), mono("PATH")),
             ),
         )
@@ -172,14 +171,6 @@ class TerminalChannel(private val activity: Activity, private val scope: Corouti
 
     /** 同 `ShellTutorialComposeScreen.mono`。 */
     private fun mono(value: String): String = "<font face=\"monospace\">$value</font>"
-
-    /** 同 `ShellTutorialComposeScreen.plainText`：去 HTML 标签、折叠空白。 */
-    private fun plainText(value: String): String {
-        return HtmlCompat.fromHtml(value, HtmlCompat.FROM_HTML_MODE_LEGACY)
-            .toString()
-            .replace(Regex("\\s+"), " ")
-            .trim()
-    }
 
     companion object {
         const val CHANNEL = "shizuku/terminal"

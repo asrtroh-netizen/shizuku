@@ -19,7 +19,6 @@ import moe.shizuku.manager.utils.AppIconCache
 import moe.shizuku.manager.utils.ShizukuSystemApis
 import moe.shizuku.manager.utils.UserHandleCompat
 import org.json.JSONObject
-import rikka.html.text.HtmlCompat
 import rikka.shizuku.Shizuku
 import java.io.ByteArrayOutputStream
 
@@ -195,18 +194,13 @@ class AppsChannel(private val activity: Activity, private val scope: CoroutineSc
             "empty" to c.getString(R.string.home_app_management_empty),
             "requiresRoot" to c.getString(R.string.app_management_item_summary_requires_root),
             "adbLimitedTitle" to c.getString(R.string.app_management_dialog_adb_is_limited_title),
-            "adbLimitedMessage" to plainText(
+            "adbLimitedMessage" to htmlToPlainText(
                 c.getString(R.string.app_management_dialog_adb_is_limited_message, Helps.ADB.get()),
             ),
             "notRunning" to c.getString(R.string.home_status_service_not_running, c.getString(R.string.app_name)),
             "back" to c.getString(R.string.action_back),
             "ok" to c.getString(android.R.string.ok),
         )
-    }
-
-    /** 同 `AppsManagementComposeScreen.plainText`：去 HTML 标签、折叠空白。 */
-    private fun plainText(value: String): String {
-        return HtmlCompat.fromHtml(value).toString().replace(Regex("\\s+"), " ").trim()
     }
 
     companion object {

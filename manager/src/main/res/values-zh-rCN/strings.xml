@@ -218,4 +218,6 @@
     <string name="notification_channel_watchdog">守护状态</string>
     <string name="notification_watchdog_title">Shizuku 守护已启用</string>
     <string name="notification_watchdog_content">如果 ADB/TCP 启动的 Shizuku 服务被杀死，将自动尝试重启</string>
+    <string name="nav_home">首页</string>
+    <string name="nav_apps">应用</string>
 </resources>

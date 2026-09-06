@@ -5,7 +5,6 @@ import android.app.AppOpsManager
 import android.app.ForegroundServiceStartNotAllowedException
 import android.app.NotificationManager
 import android.content.ActivityNotFoundException
-import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -23,7 +22,6 @@ import kotlinx.coroutines.CoroutineScope
 import moe.shizuku.manager.AppConstants
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
-import moe.shizuku.manager.adb.AdbPairingNotificationListener
 import moe.shizuku.manager.adb.AdbPairingService
 import org.json.JSONObject
 import rikka.compatibility.DeviceCompatibility
@@ -165,7 +163,7 @@ class PairingChannel(private val activity: Activity, private val scope: Coroutin
                     ok()
                 }
                 "openNotificationAccessSettings" -> runAction(result, "openNotificationAccessSettings") {
-                    openNotificationAccessSettings()
+                    NotificationListenerAccess.openSettings(activity)
                     ok()
                 }
                 else -> result.notImplemented()
@@ -230,24 +228,6 @@ class PairingChannel(private val activity: Activity, private val scope: Coroutin
         localNetworkPermissionRequested = false
         syncState()
         startPairingIfReady()
-    }
-
-    @RequiresApi(Build.VERSION_CODES.R)
-    private fun isNotificationListenerEnabled(): Boolean {
-        val pkgName = activity.packageName
-        val flat = Settings.Secure.getString(activity.contentResolver, "enabled_notification_listeners")
-        if (flat != null) {
-            val names = flat.split(":").toTypedArray()
-            for (name in names) {
-                val cn = ComponentName.unflattenFromString(name)
-                if (cn != null) {
-                    if (pkgName == cn.packageName) {
-                        return true
-                    }
-                }
-            }
-        }
-        return false
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
@@ -320,12 +300,12 @@ class PairingChannel(private val activity: Activity, private val scope: Coroutin
     private fun syncState() {
         state = state.copy(
             notificationEnabled = isNotificationEnabled(),
-            notificationListenerEnabled = isNotificationListenerEnabled(),
+            notificationListenerEnabled = NotificationListenerAccess.isEnabled(activity),
             localNetworkPermissionGranted = hasLocalNetworkPermission(),
         )
     }
 
-    // ───── 系统跳转（逐行同 AdbPairingTutorialActivity.onCreate 里的三个回调）─────
+    // ───── 系统跳转（逐行同 AdbPairingTutorialActivity.onCreate 里的回调；通知监听设置见 NotificationListenerAccess）─────
 
     private fun openDeveloperOptions() {
         val intent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
@@ -344,27 +324,6 @@ class PairingChannel(private val activity: Activity, private val scope: Coroutin
         try {
             activity.startActivity(intent)
         } catch (_: ActivityNotFoundException) {
-        }
-    }
-
-    private fun openNotificationAccessSettings() {
-        try {
-            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS).apply {
-                    putExtra(
-                        Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
-                        ComponentName(activity, AdbPairingNotificationListener::class.java).flattenToString(),
-                    )
-                }
-            } else {
-                Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-            }
-            activity.startActivity(intent)
-        } catch (_: ActivityNotFoundException) {
-            try {
-                activity.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-            } catch (_: ActivityNotFoundException) {
-            }
         }
     }
 

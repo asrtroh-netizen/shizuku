@@ -133,4 +133,6 @@
     <string name="home_adb_is_limited_title">추가 단계를 진행해야 합니다</string>
     <string name="home_app_management_empty">Shizuku에 요청 또는 선언한 앱들이 여기에 표시됩니다.</string>
     <string name="dialog_adb_discovery_message_toggle_wireless_debugging">\"무선 디버깅\"이 검색중으로 유지된다면 비활성화했다가 다시 활성화해 보세요.</string>
+    <string name="nav_home">홈</string>
+    <string name="nav_apps">앱</string>
 </resources>

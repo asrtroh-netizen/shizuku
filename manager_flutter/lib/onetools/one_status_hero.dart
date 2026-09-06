@@ -55,6 +55,8 @@ class OneStatusHero extends StatelessWidget {
     this.actionLabel,
     this.actionSub,
     this.onAction,
+    this.secondaryActionLabel,
+    this.onSecondaryAction,
     this.busyLabel,
     this.trailing,
   }) : assert(stageLabels.length == 3, '阶段进度固定三段，与三态一一对应');
@@ -79,6 +81,10 @@ class OneStatusHero extends StatelessWidget {
   final String? actionLabel;
   final String? actionSub;
   final VoidCallback? onAction;
+
+  /// 左侧次按钮（OneKuku「配对」）。与 [actionLabel] 同行；为空则只渲染主按钮。
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryAction;
 
   /// 忙态按钮文案；不传保持原版「处理中」。
   final String? busyLabel;
@@ -262,50 +268,87 @@ class OneStatusHero extends StatelessWidget {
     );
   }
 
+  ButtonStyle get _heroButtonStyle => FilledButton.styleFrom(
+    // 家族的主动作一律白底黑字药丸，不吃 primary：它只在告警/忙态
+    // 出现，那时卡面是粉或灰，不会白压白。
+    backgroundColor: OneHero.buttonSurface,
+    foregroundColor: OneHero.onButtonSurface,
+    disabledBackgroundColor: OneHero.buttonSurface.withValues(alpha: 0.38),
+    disabledForegroundColor: OneHero.onButtonSurface.withValues(alpha: 0.38),
+    minimumSize: const Size(0, 52),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    shape: const StadiumBorder(),
+  );
+
+  Widget _heroButton({
+    required String label,
+    required VoidCallback? onPressed,
+    bool expanded = false,
+  }) {
+    final button = FilledButton(
+      onPressed: onPressed,
+      style: _heroButtonStyle,
+      child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+    );
+    return expanded ? Expanded(child: button) : button;
+  }
+
   Widget _action(ThemeData theme, Color content) {
     final busy = state.isBusy;
+    final showPair = !busy &&
+        secondaryActionLabel != null &&
+        secondaryActionLabel!.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: busy ? null : onAction,
-            style: FilledButton.styleFrom(
-              // 家族的主动作一律白底黑字药丸，不吃 primary：它只在告警/忙态
-              // 出现，那时卡面是粉或灰，不会白压白。
-              backgroundColor: OneHero.buttonSurface,
-              foregroundColor: OneHero.onButtonSurface,
-              disabledBackgroundColor: OneHero.buttonSurface.withValues(
-                alpha: 0.38,
+        if (busy)
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: null,
+              style: _heroButtonStyle,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: OneHero.onButtonSurface,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(busyLabel ?? '处理中'),
+                ],
               ),
-              disabledForegroundColor: OneHero.onButtonSurface.withValues(
-                alpha: 0.38,
-              ),
-              minimumSize: const Size(0, 52),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: const StadiumBorder(),
             ),
-            child: busy
-                ? Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: OneHero.onButtonSurface,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(busyLabel ?? '处理中'),
-                    ],
-                  )
-                : Text(actionLabel ?? ''),
+          )
+        else if (showPair)
+          Row(
+            children: [
+              _heroButton(
+                label: secondaryActionLabel!,
+                onPressed: onSecondaryAction,
+                expanded: true,
+              ),
+              const SizedBox(width: 10),
+              _heroButton(
+                label: actionLabel ?? '',
+                onPressed: onAction,
+                expanded: true,
+              ),
+            ],
+          )
+        else
+          SizedBox(
+            width: double.infinity,
+            child: _heroButton(
+              label: actionLabel ?? '',
+              onPressed: onAction,
+            ),
           ),
-        ),
         if (actionSub != null) ...[
           const SizedBox(height: 8),
           Padding(

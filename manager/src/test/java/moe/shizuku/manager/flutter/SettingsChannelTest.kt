@@ -88,18 +88,18 @@ class SettingsChannelTest {
 
     @Test
     fun localeLabel_matchesComposeTableAndFallsBackToTag() {
-        assertEquals("简体中文", localeLabel("zh-CN"))
-        assertEquals("繁體中文", localeLabel("zh-TW"))
-        assertEquals("English", localeLabel("en"))
-        assertEquals("日本語", localeLabel("ja"))
-        assertEquals("한국어", localeLabel("ko"))
-        assertEquals("Español (Latinoamérica)", localeLabel("es-419"))
-        assertEquals("xx-YY", localeLabel("xx-YY"))
+        assertEquals("简体中文", LocaleLabels.label("zh-CN"))
+        assertEquals("繁體中文", LocaleLabels.label("zh-TW"))
+        assertEquals("English", LocaleLabels.label("en"))
+        assertEquals("日本語", LocaleLabels.label("ja"))
+        assertEquals("한국어", LocaleLabels.label("ko"))
+        assertEquals("Español (Latinoamérica)", LocaleLabels.label("es-419"))
+        assertEquals("xx-YY", LocaleLabels.label("xx-YY"))
     }
 
     @Test
     fun buildLocaleRows_firstIsSystemLabelAndSelectionFollowsCurrentTag() {
-        val rows = buildLocaleRows(listOf("SYSTEM", "en", "zh-CN"), currentTag = "zh-CN", systemLabel = "Follow System")
+        val rows = LocaleLabels.rows(listOf("SYSTEM", "en", "zh-CN"), currentTag = "zh-CN", systemLabel = "Follow System")
 
         assertEquals(3, rows.size)
         assertEquals(LocaleRow("SYSTEM", "Follow System", selected = false), rows[0])
@@ -109,7 +109,7 @@ class SettingsChannelTest {
 
     @Test
     fun buildLocaleRows_systemSelectedByDefaultTag() {
-        val rows = buildLocaleRows(listOf("SYSTEM", "en"), currentTag = "SYSTEM", systemLabel = "Follow System")
+        val rows = LocaleLabels.rows(listOf("SYSTEM", "en"), currentTag = "SYSTEM", systemLabel = "Follow System")
         assertEquals(listOf(true, false), rows.map { it.selected })
     }
 

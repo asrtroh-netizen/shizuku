@@ -10,7 +10,11 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
-        home: const HomeScreen(),
+        home: HomeScreen(
+          onOpenApps: () {},
+          onOpenTerminal: () {},
+          onOpenPairing: () {},
+        ),
       ),
     );
     await tester.pump();

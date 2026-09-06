@@ -3,12 +3,10 @@ package moe.shizuku.manager.flutter
 import android.Manifest
 import android.app.Activity
 import android.content.ComponentName
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
@@ -21,7 +19,6 @@ import kotlinx.coroutines.withContext
 import moe.shizuku.manager.BuildConfig
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
-import moe.shizuku.manager.adb.AdbPairingNotificationListener
 import moe.shizuku.manager.app.ThemeHelper
 import moe.shizuku.manager.ktx.setComponentEnabled
 import moe.shizuku.manager.receiver.BootCompleteReceiver
@@ -37,108 +34,8 @@ import java.util.Locale
 
 // ───────────────────────── 纯函数（零 Android / org.json 依赖，供 JUnit 直测）─────────────────────────
 
-/** 两个开机项的当前落盘值。 */
-internal data class BootPrefs(val bootRoot: Boolean, val bootWireless: Boolean)
-
 /** 夜间模式候选：`R.array.night_mode_value` ↔ `R.array.night_mode`。 */
 internal data class NightModeOption(val value: Int, val label: String)
-
-/** 语言候选，与 Compose `LocaleChoice` 同形。 */
-internal data class LocaleRow(val tag: String, val label: String, val selected: Boolean)
-
-/**
- * Root 开机 / 无线开机互斥（与 `SettingsComposeScreen.onToggle` 同义）：
- * 开任一项 → 另一项强制关；关任一项不影响另一项。其它 key 原样返回。
- */
-internal fun applyBootToggle(current: BootPrefs, key: String, checked: Boolean): BootPrefs {
-    return when (key) {
-        ShizukuSettings.KEEP_START_ON_BOOT -> BootPrefs(
-            bootRoot = checked,
-            bootWireless = if (checked) false else current.bootWireless,
-        )
-        ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS -> BootPrefs(
-            bootRoot = if (checked) false else current.bootRoot,
-            bootWireless = checked,
-        )
-        else -> current
-    }
-}
-
-/**
- * TCP/IP 端口输入校验，与 Compose TcpIpPort 对话框的保存分支同义：
- * 去首尾空白后为空 → `null`（表示清除）；否则必须是 10..65535 的整数
- * （`R.string.dialog_adb_invalid_port` 原文即 "ranging from 10 to 65535"），否则抛 [IllegalArgumentException]。
- */
-internal fun parseTcpipPort(raw: String): Int? {
-    val trimmed = raw.trim()
-    if (trimmed.isEmpty()) return null
-    val value = trimmed.toIntOrNull()
-    require(value != null && value in 10..65535) { "invalid port: $trimmed" }
-    return value
-}
-
-/** 与 `SettingsComposeScreen.localeLabel` 逐字同表；未知 tag 原样返回。 */
-internal fun localeLabel(tag: String): String {
-    return when (tag) {
-        "ang" -> "Old English (ca. 450-1100)"
-        "ar" -> "العربية"
-        "ars" -> "العربية النجدية"
-        "az" -> "Azərbaycanca"
-        "bn" -> "বাংলা"
-        "ca" -> "Català"
-        "cs" -> "Čeština"
-        "de" -> "Deutsch"
-        "el" -> "Ελληνικά"
-        "en" -> "English"
-        "eo" -> "Esperanto"
-        "es" -> "Español"
-        "es-419" -> "Español (Latinoamérica)"
-        "es-CL" -> "Español (Chile)"
-        "et" -> "Eesti"
-        "fa" -> "فارسی"
-        "fil" -> "Filipino"
-        "fr" -> "Français"
-        "he" -> "עברית"
-        "hu" -> "Magyar"
-        "hy" -> "Հայերեն"
-        "id" -> "Indonesia"
-        "it" -> "Italiano"
-        "ja" -> "日本語"
-        "ka" -> "ქართული"
-        "ko" -> "한국어"
-        "ms" -> "Melayu"
-        "nl" -> "Nederlands"
-        "pl" -> "Polski"
-        "pt" -> "Português"
-        "pt-BR" -> "Português (Brasil)"
-        "ro" -> "Română"
-        "ru" -> "Русский"
-        "sl" -> "Slovenščina"
-        "sr" -> "Српски"
-        "ta" -> "தமிழ்"
-        "th" -> "ไทย"
-        "tr" -> "Türkçe"
-        "uk" -> "Українська"
-        "vi" -> "Tiếng Việt"
-        "zh-CN" -> "简体中文"
-        "zh-TW" -> "繁體中文"
-        else -> tag
-    }
-}
-
-/**
- * 与 `SettingsComposeScreen.buildLocaleItems` 同义：首项（"SYSTEM"）用 [systemLabel]
- * （`R.string.settings_language_system`），其余走 [localeLabel]；`selected = tag == currentTag`。
- */
-internal fun buildLocaleRows(tags: List<String>, currentTag: String, systemLabel: String): List<LocaleRow> {
-    return tags.mapIndexed { index, tag ->
-        LocaleRow(
-            tag = tag,
-            label = if (index == 0) systemLabel else localeLabel(tag),
-            selected = tag == currentTag,
-        )
-    }
-}
 
 /**
  * 整页快照（RULEBOOK §10）。`tcpipPort` 未设（null / 空）时为 `""` 而非 null。
@@ -219,7 +116,9 @@ class SettingsChannel(private val activity: Activity, private val scope: Corouti
                     val tag = call.argument<String>("tag") ?: "SYSTEM"
                     runMain(result, "setLocale") { setLocale(tag) }
                 }
-                "openNotificationAccess" -> runAction(result, "openNotificationAccess") { openNotificationAccess() }
+                "openNotificationAccess" -> runAction(result, "openNotificationAccess") {
+                    NotificationListenerAccess.openSettings(activity)
+                }
                 "openTranslation" -> runAction(result, "openTranslation") {
                     CustomTabsHelper.launchUrlOrCopy(activity, activity.getString(R.string.translation_url))
                 }
@@ -287,7 +186,7 @@ class SettingsChannel(private val activity: Activity, private val scope: Corouti
         val values = activity.resources.getIntArray(R.array.night_mode_value)
         val nightModeOptions = values.mapIndexed { index, value -> NightModeOption(value, labels[index]) }
         val currentTag = prefs.getString(ShizukuSettings.LANGUAGE, "SYSTEM") ?: "SYSTEM"
-        val locales = buildLocaleRows(
+        val locales = LocaleLabels.rows(
             ShizukuLocales.LOCALES.toList(),
             currentTag,
             activity.getString(R.string.settings_language_system),
@@ -376,21 +275,16 @@ class SettingsChannel(private val activity: Activity, private val scope: Corouti
                     bootWireless = prefs.getBoolean(ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, false),
                 )
                 val next = applyBootToggle(current, key, checked)
-                val otherKey = if (key == ShizukuSettings.KEEP_START_ON_BOOT) {
-                    ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS
-                } else {
-                    ShizukuSettings.KEEP_START_ON_BOOT
-                }
                 prefs.edit {
-                    putBoolean(key, checked)
-                    if (checked) putBoolean(otherKey, false)
+                    putBoolean(ShizukuSettings.KEEP_START_ON_BOOT, next.bootRoot)
+                    putBoolean(ShizukuSettings.KEEP_START_ON_BOOT_WIRELESS, next.bootWireless)
                 }
                 setBootReceiverEnabled(next.bootRoot || next.bootWireless)
                 Outcome(snapshotJson(), recreate = true)
             }
 
             ShizukuSettings.AUTO_PAIRING_ENABLED -> {
-                if (checked && !isNotificationListenerEnabled()) {
+                if (checked && !NotificationListenerAccess.isEnabled(activity)) {
                     // 未开通知监听：不落盘，只让 Dart 引导到监听设置。
                     Outcome(snapshotJson(mapOf("needNotificationAccess" to true)), recreate = false)
                 } else {
@@ -444,28 +338,7 @@ class SettingsChannel(private val activity: Activity, private val scope: Corouti
         return Outcome(snapshotJson(), recreate = true)
     }
 
-    // ───── 系统跳转 / 权限探测（逐行同 SettingsComposeScreen 私有函数）─────
-
-    private fun openNotificationAccess() {
-        try {
-            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS).apply {
-                    putExtra(
-                        Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
-                        ComponentName(activity, AdbPairingNotificationListener::class.java).flattenToString(),
-                    )
-                }
-            } else {
-                Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-            }
-            activity.startActivity(intent)
-        } catch (_: Exception) {
-            try {
-                activity.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-            } catch (_: Exception) {
-            }
-        }
-    }
+    // ───── 权限探测 / 组件开关（逐行同 SettingsComposeScreen 私有函数）─────
 
     private fun hasWriteSecureSettings(): Boolean {
         return ContextCompat.checkSelfPermission(
@@ -477,23 +350,6 @@ class SettingsChannel(private val activity: Activity, private val scope: Corouti
     private fun setBootReceiverEnabled(enabled: Boolean) {
         val component = ComponentName(activity.packageName, BootCompleteReceiver::class.java.name)
         activity.packageManager.setComponentEnabled(component, enabled)
-    }
-
-    private fun isNotificationListenerEnabled(): Boolean {
-        val pkgName = activity.packageName
-        val flat = Settings.Secure.getString(activity.contentResolver, "enabled_notification_listeners")
-        if (!flat.isNullOrEmpty()) {
-            val names = flat.split(":")
-            for (name in names) {
-                val cn = ComponentName.unflattenFromString(name)
-                if (cn != null) {
-                    if (pkgName == cn.packageName) {
-                        return true
-                    }
-                }
-            }
-        }
-        return false
     }
 
     companion object {

@@ -7,6 +7,7 @@ import 'package:manager_flutter/apps/apps_models.dart';
 import 'package:manager_flutter/apps/apps_screen.dart';
 import 'package:manager_flutter/onetools/glass.dart';
 import 'package:manager_flutter/theme/app_theme.dart';
+import 'package:manager_flutter/widgets/glass_notice_card.dart';
 
 const MethodChannel _channel = MethodChannel('shizuku/apps');
 
@@ -216,7 +217,7 @@ void main() {
     await _pumpApps(tester);
 
     expect(find.text('Service is down'), findsOneWidget);
-    expect(find.byType(GlassPanel), findsOneWidget);
+    expect(find.byType(GlassNoticeCard), findsOneWidget);
     expect(find.byType(Card), findsNothing);
     expect(find.byType(Switch), findsNothing);
     expect(find.text('Alpha'), findsNothing);
