@@ -1,0 +1,89 @@
+﻿Resolving dependencies...
+Downloading packages...
+  clock 1.1.2 (1.1.3 available)
+  matcher 0.12.19 (0.12.20 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.0 (1.19.0 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.11 (0.7.14 available)
+  vector_math 2.2.0 (2.4.2 available)
+  vm_service 15.2.0 (15.3.0 available)
+Got dependencies!
+8 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading E:/GQ/Ultra/Shizuku/manager_flutter/test/apps_screen_test.dart
+00:00 +0: E:/GQ/Ultra/Shizuku/manager_flutter/test/apps_screen_test.dart: no host: fallback notRunning card renders, nothing crashes
+00:01 +1: E:/GQ/Ultra/Shizuku/manager_flutter/test/app_shell_test.dart: no host: shell renders dock with fallback labels and home hero
+00:01 +2: E:/GQ/Ultra/Shizuku/manager_flutter/test/app_shell_test.dart: no host: shell renders dock with fallback labels and home hero
+00:02 +3: E:/GQ/Ultra/Shizuku/manager_flutter/test/app_shell_test.dart: no host: shell renders dock with fallback labels and home hero
+00:02 +4: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_hero_face_test.dart: home keeps original sections when service is down
+00:02 +5: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_hero_face_test.dart: home keeps original sections when service is down
+00:02 +6: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_hero_face_test.dart: home keeps original sections when service is down
+00:02 +7: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: no host: whole page renders fallback copy, nothing crashes
+00:02 +8: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: no host: whole page renders fallback copy, nothing crashes
+00:02 +9: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: no host: whole page renders fallback copy, nothing crashes
+00:02 +10: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: no host: whole page renders fallback copy, nothing crashes
+00:02 +11: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: no host: whole page renders fallback copy, nothing crashes
+00:02 +12: E:/GQ/Ultra/Shizuku/manager_flutter/test/pairing_screen_test.dart: no host: fallback renders (title, back arrow, notification-blocked card), start called exactly once, no crash
+00:03 +13: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: no host: three fallback sections, all entries, 6 switches, no crash
+00:03 +14: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: no host: three fallback sections, all entries, 6 switches, no crash
+00:03 +15: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: no host: three fallback sections, all entries, 6 switches, no crash
+00:03 +16: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: no host: three fallback sections, all entries, 6 switches, no crash
+00:03 +17: E:/GQ/Ultra/Shizuku/manager_flutter/test/terminal_screen_test.dart: no host: fallback title, default file names, four glass panels
+00:03 +18: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:03 +19: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:03 +20: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:03 +21: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:03 +22: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:03 +23: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:03 +24: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:04 +25: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:04 +26: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:04 +27: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:04 +28: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:04 +29: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:04 +30: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:04 +31: E:/GQ/Ultra/Shizuku/manager_flutter/test/widget_test.dart: app boots Ultra hero with dot-matrix face
+00:04 +32: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: wireless boot tap sends setBool{start_on_boot_wireless,true}; needGrant opens alert with grantCmd; manual -> openWirelessGuide + copyText
+00:04 +33: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: wireless boot tap sends setBool{start_on_boot_wireless,true}; needGrant opens alert with grantCmd; manual -> openWirelessGuide + copyText
+00:04 +34: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: wireless boot tap sends setBool{start_on_boot_wireless,true}; needGrant opens alert with grantCmd; manual -> openWirelessGuide + copyText
+00:04 +35: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: terminal tile: confirm fires onOpenTerminal, no openTerminal
+00:04 +36: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: terminal tile: confirm fires onOpenTerminal, no openTerminal
+00:04 +37: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: needGrant alert cancel does not open guide or copy
+00:04 +38: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: needGrant alert cancel does not open guide or copy
+00:05 +39: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: pairing button fires onOpenPairing directly, no openPairing
+00:05 +40: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: pairing button fires onOpenPairing directly, no openPairing
+00:05 +41: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: auto pairing needNotificationAccess -> alert; OK -> openNotificationAccess
+00:05 +42: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: auto pairing needNotificationAccess -> alert; OK -> openNotificationAccess
+00:05 +43: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: auto pairing needNotificationAccess -> alert; OK -> openNotificationAccess
+00:05 +44: E:/GQ/Ultra/Shizuku/manager_flutter/test/pairing_screen_test.dart: back arrow pops the pushed route
+00:05 +45: E:/GQ/Ultra/Shizuku/manager_flutter/test/pairing_screen_test.dart: back arrow pops the pushed route
+00:05 +46: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: switch tap toggles with the opposite value and applies returned snapshot
+00:05 +47: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: switch tap toggles with the opposite value and applies returned snapshot
+00:05 +48: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: switch tap toggles with the opposite value and applies returned snapshot
+00:05 +49: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: switch tap toggles with the opposite value and applies returned snapshot
+00:05 +50: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: adbLimited=true shows HomeLimitedBanner; tap sends openAdbPermissionHelp
+00:06 +51: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: theme switches send ThemeHelper keys
+00:06 +52: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: adbLimited=false: no banner
+00:06 +53: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: language row opens GlassChoiceDialog; picking 2nd sends setLocale{tag}
+00:06 +54: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: PC ADB: "Send it" -> sendAdbCommand; "Copy it" -> copyAdbCommand
+00:07 +55: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: dark theme row opens GlassChoiceDialog; picking Off sends setNightMode{1}
+00:07 +56: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: I-5: cancel on the command dialog closes it without an exception
+00:07 +57: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: port dialog: invalid -> inline error, no call; valid -> setTcpipPort; blank -> clear
+00:09 +58: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: port dialog: invalid -> inline error, no call; valid -> setTcpipPort; blank -> clear
+00:09 +59: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: bad input: copy / locales not maps, running not bool -> fallback, no crash
+00:09 +60: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: port dialog cancel sends nothing
+00:09 +61: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: GlassAlert contract (shared by apps / settings after D2) cancel -> false, confirm -> true
+00:09 +62: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: translation row -> openTranslation; contributors row is inert
+00:10 +63: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: translation row -> openTranslation; contributors row is inert
+00:10 +64: E:/GQ/Ultra/Shizuku/manager_flutter/test/home_screen_test.dart: GlassAlert contract (shared by apps / settings after D2) no cancelLabel -> no cancel button; error tone paints errorContainer
+00:10 +65: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: supportsStartOnBoot=false hides the four startup switches (Compose parity)
+00:10 +66: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: supportsStartOnBoot=false hides the four startup switches (Compose parity)
+00:10 +67: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: write failure (PlatformException) falls back to re-pulling getState
+00:11 +68: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: bad input: nightModeOptions is a string -> dark theme row still renders and opens; tcpipPort number 5555 -> shown as "5555"
+00:12 +69: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: SettingsSnapshot.fromJson: empty map -> empty; bad types -> defaults
+00:12 +70: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: derived labels fall back to followSystem / languageSystem
+00:12 +71: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: SettingsCopy.fromJson: non-string / empty values fall back per key
+00:12 +72: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: SettingsKeys mirror Kotlin ShizukuSettings / ThemeHelper string values
+00:12 +73: E:/GQ/Ultra/Shizuku/manager_flutter/test/settings_screen_test.dart: TcpipPortRange matches Compose 10..65535
+00:12 +74: All tests passed!

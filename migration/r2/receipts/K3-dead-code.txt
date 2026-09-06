@@ -1,0 +1,6 @@
+item=K3-dead-code
+completed_at=2026-09-05T20:58:15Z
+manager/build.gradle	1de49b542b0b1aa063fd385ac951745b0ff0a8e3bfceebe780f24946a00bb7f4
+manager/src/main/java/moe/shizuku/manager/ktx/RecyclerView.kt	DELETED
+manager/src/main/java/moe/shizuku/manager/widget/VerticalPaddingDecoration.java	DELETED
+manager/src/main/java/moe/shizuku/manager/widget/CheckedImageView.java	DELETED

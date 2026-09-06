@@ -1,0 +1,7 @@
+migration/r2/items/D1-home-split.md
+migration/r2/items/D2-adopt-shared.md
+migration/r2/items/D3-onetools-sync.md
+migration/r2/items/K1-home-channel.md
+migration/r2/items/K2-shared-helpers.md
+migration/r2/items/K3-dead-code.md
+migration/r2/items/K4-home-adopt.md
