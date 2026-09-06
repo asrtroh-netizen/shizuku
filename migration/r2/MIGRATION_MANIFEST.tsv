@@ -1,8 +1,0 @@
-work_path	target_path
-migration/r2/items/K1-home-channel.md	manager/src/main/java/moe/shizuku/manager/flutter/HomeChannel.kt
-migration/r2/items/K2-shared-helpers.md	manager/src/main/java/moe/shizuku/manager/flutter/NotificationListenerAccess.kt
-migration/r2/items/K3-dead-code.md	migration/r2/receipts/K3-dead-code.txt
-migration/r2/items/D1-home-split.md	manager_flutter/lib/widgets/glass_alert.dart
-migration/r2/items/D3-onetools-sync.md	migration/r2/receipts/D3-onetools-sync.txt
-migration/r2/items/D2-adopt-shared.md	migration/r2/receipts/D2-adopt-shared.txt
-migration/r2/items/K4-home-adopt.md	migration/r2/receipts/K4-home-adopt.txt

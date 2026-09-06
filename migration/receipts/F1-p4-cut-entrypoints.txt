@@ -1,8 +1,0 @@
-item=F1-p4-cut-entrypoints
-completed_at=2026-09-05T17:42:08Z
-manager/src/main/AndroidManifest.xml	40a3bf640a2a4258f81547b368a9ccd4f6f73da681575fefb2ef172a436b2f9f
-manager/src/main/java/moe/shizuku/manager/flutter/FlutterHostActivity.kt	36ced7843ec2513085be8e29319c6ba907ee7a92fa6d7331f2dc0e9af4c3cc6f
-manager/src/main/java/moe/shizuku/manager/home/HomeActions.kt	da2eb71ce2d2d50049869d524c1b934603d0032700facfe49bb3190c9bdfb37e
-manager/src/main/java/moe/shizuku/manager/adb/AdbPairingService.kt	7b3eba3acb17638962b4a525b3222ed30f25de5368c8db62bc68b0ce761c3c33
-manager/src/main/java/moe/shizuku/manager/legacy/LegacyIsNotSupportedActivity.kt	af481b9656390af5ac2bb44ea7ddd6a8f35096d483f4f301d577dd65372438a7
-apk	shizuku-vV15.1.3-debug.apk	936027d125c9d9dd7fb1a113f849b4bb398a3c70ee4b764e5ec1c9c58b4f22d9	91.7MB

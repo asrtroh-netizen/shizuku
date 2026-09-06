@@ -1,5 +1,0 @@
-judge	mode	command	cwd	baseline_commit	baseline_result	evidence_path	evidence_sha256
-flutter-analyze	tests	flutter analyze	manager_flutter	91b9f3579ca8e48f0c4a4ca4ef8b07997168013b	No issues found	migration/r2/baseline/flutter-analyze.log	eef031b125c3398b359966a1551398e6bb7185d2fe66f790fb10eb0cc478e5c9
-flutter-test	tests	flutter test	manager_flutter	91b9f3579ca8e48f0c4a4ca4ef8b07997168013b	56 passed	migration/r2/baseline/flutter-test.log	a1bdb051a6c33ccf98b663e101fc2a054b53a25b1ac23699858a12e92c8ffb82
-gradle-unit	tests	.\gradlew.bat :manager:testDebugUnitTest --offline --console=plain	.	91b9f3579ca8e48f0c4a4ca4ef8b07997168013b	BUILD SUCCESSFUL; 50 tests 0 failures	migration/r2/baseline/gradle-unit.log	8670b8300ea5be9670a4622a08dd462c99292c3b673533ba820917168ea3a096
-apk-badging	parity	aapt2 dump badging <release apk>	.	91b9f3579ca8e48f0c4a4ca4ef8b07997168013b	package moe.shizuku.privileged.api; launchable FlutterHostActivity	-	-

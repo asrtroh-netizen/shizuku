@@ -1,9 +1,0 @@
-item=K4-home-adopt
-completed_at=2026-09-05T20:58:15Z
-manager/src/main/java/moe/shizuku/manager/home/HomeActions.kt	857e7db651a9bc6f1a68e5b9d579c36b01ffc09ccd693e2ef6ebe94fcb5eda49
-manager/src/test/java/moe/shizuku/manager/home/HomeStateTest.kt	495b235757542a775867035195fdea014b4ec97ac9762716d19fb4500cd67e2b
-manager/src/main/res/values/strings.xml	733eeefb517ee83c770987bb963156346860a60df72e0a7dd107aeec95368a1c
-manager/src/main/res/values-zh-rCN/strings.xml	1b8b497599a2663d2991604b2b78b549be24a6115ea57e2d6657ff85de67f593
-manager/src/main/res/values-zh-rTW/strings.xml	82916ccb2f9dae004eb20a0ae6d38167ac45be8674a59a3d96f8040875048247
-manager/src/main/res/values-ja/strings.xml	6730c0ff823b870d2551ae0c8026a111072532d321e20cb35e86a034efe2f615
-manager/src/main/res/values-ko/strings.xml	13d94ce9cbd4788304fe48c3b65dd4c53c327989830596b222c2c87e3dcb768e

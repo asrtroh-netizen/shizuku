@@ -132,7 +132,6 @@ Shizuku 最重要的功能，是扮演一个中介者：接收来自应用的请
 
 - `manager_flutter/lib/nav/`：应用壳与玻璃底栏；`lib/home`、`lib/apps`、`lib/terminal`、`lib/settings`、`lib/pairing` 每个页面一个目录（`*_models.dart` / `*_channel.dart` / `*_screen.dart`）。
 - `manager/src/main/java/moe/shizuku/manager/flutter/`：`FlutterHostActivity`（唯一的 Launcher Activity）和每个页面对应的 `*Channel.kt`；业务逻辑全在这里和 `HomeActions.kt`。
-- `migration/`：这次 Compose → Flutter 迁移用的计划书、规则手册和验证账本。
 
 ## 授权条款 (License)
 

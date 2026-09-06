@@ -90,7 +90,6 @@ The `:manager:assembleDebug` task generates a debuggable server. You can attach 
 ### Repository layout for the UI
 - `manager_flutter/lib/nav/` — app shell and glass dock; `lib/home`, `lib/apps`, `lib/terminal`, `lib/settings`, `lib/pairing` — one folder per screen (`*_models.dart`, `*_channel.dart`, `*_screen.dart`).
 - `manager/src/main/java/moe/shizuku/manager/flutter/` — `FlutterHostActivity` (the only launcher Activity) and one `*Channel.kt` per screen; all business logic lives here and in `HomeActions.kt`.
-- `migration/` — the plan, rulebook and verification ledger used for the Compose → Flutter migration.
 
 ## License
 Licensed under Apache 2.0.

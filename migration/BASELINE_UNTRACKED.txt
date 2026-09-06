@@ -1,6 +1,0 @@
-.xj-cursor/Root开机自启复审-20260901-131428-unknown-model.md
-.xj-cursor/Root开机自启故障-20260901-122102-unknown-model.md
-.xj-cursor/Root开机自启修复验真-20260901-132300-unknown-model.md
-.xj-cursor/Root自启最小可靠修复设计-20260901-123404-unknown-model.md
-.xj-cursor/V15.1.3应用管理返回闪退-20260824-015000-grok-4.6.md
-.xj-cursor/V15.1.4-R8-K60-clear-20260824-024500-grok.md

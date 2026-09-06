@@ -1,5 +1,0 @@
-judge	mode	command	cwd	baseline_commit	baseline_result	evidence_path	evidence_sha256
-flutter-analyze	tests	flutter analyze	manager_flutter	a10c72af207e046bf2ed38dfc508d24bc33e1aa6	No issues found	migration/baseline/flutter-analyze.log	d96b387a22d43c1bca46e0b2f2fcdfe77f96026dd5a1b4f1e09d5210522e576c
-flutter-test	tests	flutter test	manager_flutter	a10c72af207e046bf2ed38dfc508d24bc33e1aa6	3 passed	migration/baseline/flutter-test.log	0b3c224c2e4381608d9a381f9335f88b22de2f2f809cc6d0b1c4c550f8d60fa5
-gradle-unit	tests	$env:JAVA_HOME='C:\Program Files\Microsoft\jdk-21.0.11.10-hotspot'; .\gradlew.bat :manager:testDebugUnitTest --offline --console=plain	.	a10c72af207e046bf2ed38dfc508d24bc33e1aa6	BUILD SUCCESSFUL; 18 tests 0 failures (HomeEventGateTest 2, GrantStatesTest 4, RootBootStartWorkerTest 5, RootStartAttemptTest 3, UserPresentRestartReceiverTest 4)	migration/baseline/gradle-unit.log	117c52cf0eea9cb5928dd41afedb58707c2c2dc8dc5b9a31f0e28784176be918
-device-smoke	parity	(manual) install debug APK; tap through 4 tabs	.	a10c72af207e046bf2ed38dfc508d24bc33e1aa6	NOT RUN (no device in this session; hard gate before P4)	-	-
