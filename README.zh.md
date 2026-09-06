@@ -24,8 +24,9 @@
   - **一键式通知启动**：优化无线侦错配对流程，在成功配对后，使用者可直接从系统通知栏点击启动，无需返回应用介面。
   - **TV 装置适配**：针对 Android TV 与电视盒装置优化启动逻辑，并调整介面布局以适配遥控器操作。
 
-- **Flutter 管家界面（V15.2.0 起）**：
+- **Flutter 管家界面（V15.2.0 起；当前 V15.5.0）**：
   - **OneIMS Ultra 皮肤**：整个管家壳改为 **Flutter** 模块（`manager_flutter/`），沿用 OneIMS Ultra 的黑白液态玻璃设计——Montserrat 字体、玻璃面板、悬浮 4 项底栏（首页 / 应用 / 终端 / 设置），以及一张点阵脸：服务在跑就笑，没跑就皱眉。
+  - **V15.5.0**：首页列表与其它 Tab 一样从底栏下透出；Lang 芯片显示完整语言名；底栏标签为首页 / 应用；PC ADB「查看命令」弹窗取消可正常关闭；去掉未使用的 Compose 工具依赖，正式包更小。
   - **提权部分一行没动**：只换了看得见的壳。Shizuku server、starter、`rish`、ADB 配对服务、Watchdog、开机自启 Receiver 和系统授权弹窗仍是原生 Kotlin，Flutter 只通过 MethodChannel 调它们。包名仍是 `moe.shizuku.privileged.api`，已授权的客户端 App 不受影响。
   - **纯黑夜间模式**：设置里仍可开 OLED 纯黑主题。
   - **应用内检查更新**：首页可直接检查本仓库的 GitHub Releases 并下载最新 APK。
