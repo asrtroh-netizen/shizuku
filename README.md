@@ -24,8 +24,8 @@ This is a **fork** of Shizuku. If you are looking for the official Shizuku devel
   - **TV Device Optimization**: Tailored startup logic and UI layout for Android TV and set-top boxes, ensuring compatibility with remote control operations.
 
 - **Flutter Manager UI (V15.2.0+; current V15.5.0)**:
-  - **OneIMS Ultra skin**: The whole manager shell is now a **Flutter** module (`manager_flutter/`) using the OneIMS Ultra black-and-white liquid-glass design — Montserrat type, glass panels, a floating 4-tab dock (Home / Apps / Terminal / Settings) and a dot-matrix status face that smiles when the service is up and frowns when it is not.
-  - **V15.5.0**: Home list scrolls under the dock like other tabs; Lang chip uses full locale names; dock labels are Home / Apps; the PC-ADB command dialog can be cancelled; unused Compose tooling was dropped so the release APK is smaller.
+  - **OneIMS Ultra skin**: The whole manager shell is now a **Flutter** module (`manager_flutter/`) using the OneIMS Ultra black-and-white liquid-glass design — Montserrat type, glass panels, a floating 2-tab dock (Home / Settings) and a dot-matrix status face that smiles when the service is up and frowns when it is not. Apps and Terminal open from Home as pushed pages.
+  - **V15.5.0**: Two-tab dock; language is changed from the Home Lang chip (not Settings); the Home sun/moon control follows the in-app night mode; Home list scrolls under the dock; the PC-ADB command dialog can be cancelled; unused Compose tooling was dropped so the release APK is smaller.
   - **Nothing privileged moved**: only the visible shell changed. The Shizuku server, starter, `rish`, ADB pairing service, watchdog, boot receivers and the system permission dialog are all still native Kotlin; Flutter only talks to them through method channels. Package name stays `moe.shizuku.privileged.api`, so already-authorized client apps keep working.
   - **Pure Black Dark Mode**: "Pure Black" theme option for OLED screens is still available in Settings.
   - **In-app update check**: Home can check this repository's GitHub Releases and download the newest APK.
