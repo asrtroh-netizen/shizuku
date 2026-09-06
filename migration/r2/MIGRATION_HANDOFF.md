@@ -15,9 +15,9 @@ STATE_ROOT：`migration/r2/`；规格 SPEC v1.2 / RULEBOOK R2 v1（增补，基�
 ## 结果
 
 - **裁判**：`flutter analyze` No issues；`flutter test` **74**（基线 56 + 首页 16 + I-5 2）；`gradlew :manager:testDebugUnitTest` **73**（基线 50 + HomeStateTest 12 + SharedHelpersTest 11）；`assembleDebug` + `assembleRelease` BUILD SUCCESSFUL；`aapt2` 包名 / Launcher / ABI 不变。
-- **包体**：Release 22.5 → **19.6 MB**，Debug 91.7 → 84.1 MB（删掉 `material-icons-extended`、`runtime-livedata`、`ui-tooling(-preview)` 的直接结果）。**注意**：本次 APK 里的 Flutter AAR 仍是 V15.2.0 发布时构建的，不含 R2 的 Dart 改动；发布前必须重跑 `flutter build aar --no-profile` 再打包。
+- **包体**：Release 22.5 → **19.6 MB**（`shizuku-V15.5.0-release.apk` 20,574,902 bytes）。已重编 Flutter AAR 后再打正式包。
 - **§4 核验**：五个 Kotlin 重复实现各只剩一份；`_GlassAlert` / `_NoticeCard` 零命中；死代码 / 死依赖零命中；宿主无内联首页路由；`home_screen.dart` 330 行；`HomeActions` 不再依赖宿主类。
-- **改动面**（未提交）：新建 14 个源文件（Kotlin 6 + 测试 2 + Dart 5 + 测试 1）、修改 21 个、删除 3 个；全部在 SPEC §2 范围内（漂移审计零越界）。
+- **改动面**：已提交 `9feb450` feat(manager) + `1e132d7` docs(migration) + `d87df11` docs(readme) + `5b0691f` chore(release)。
 
 ## 用户可见的变化（全部在 SPEC §6 声明并有测试）
 
@@ -25,7 +25,7 @@ I-1 首页列表从底栏下透出（与其它 Tab 一致）；I-2 首页 Lang �
 
 ## 发版
 
-用户指定正式版为 **V15.5.0**（`versionCode 155000`）。发版前必须 `flutter build aar --no-profile` 再 `assembleRelease`；`migration/round2/` 不纳入本次提交。
+已提交并推送到 `origin/main`，标签 `V15.5.0` 打在 `5b0691f`。GitHub Release：[V15.5.0](https://github.com/asrtroh-netizen/shizuku/releases/tag/V15.5.0)（资产 `shizuku-V15.5.0-release.apk`，SHA256 `f2adc39ff7bfc7aed30fca8f0b43e88e9e9bf7f49d1e3e2e645a4f3798966ac7`；发布说明里明确标注真机验收未做）。应用内 UpdateChecker 读 `releases/latest` 会看到它。`migration/round2/` 未纳入提交。
 
 GAP R2-G1 / G2（Watchdog 与 WifiReadyMonitor 在首页 / 设置页语义不一致）仍待产品拍板。
 
