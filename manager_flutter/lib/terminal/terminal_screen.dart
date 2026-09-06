@@ -3,13 +3,12 @@ import 'package:manager_flutter/onetools/glass.dart';
 import 'package:manager_flutter/terminal/terminal_channel.dart';
 import 'package:manager_flutter/terminal/terminal_models.dart';
 
-/// 原 Compose `ShellTutorialActivity` 的整页换皮：rish 教程（底栏 Tab，无返回箭头）。
+/// 原 Compose `ShellTutorialActivity` 的整页换皮：rish 教程（从首页推入）。
 ///
 /// 业务逻辑全部在 Kotlin（`shizuku/terminal`）：导出 / 打开指南只发方法名。
 /// 页面 = 页头 + 4 张页面级 [GlassPanel]（说明卡 + 三步），与 Compose 的
-/// `CalloutCard` + 3 × `StepCard` 一一对应（RULEBOOK §3.1 一页 ≤ 4 张）。
-/// 不订阅任何事件通道（RULEBOOK §1.1 v1.2 / GAP-15）：`AppShell` 每次切到本 Tab
-/// 都用新 `ValueKey` 重建本页，加上 `initState` 拉一次、`resumed` 重拉，足够保证新鲜度。
+/// `CalloutCard` + 3 × `StepCard` 一一对应。
+/// 不订阅任何事件通道：每次推入都是新 State，加上 `initState` 拉一次、`resumed` 重拉。
 class TerminalScreen extends StatefulWidget {
   const TerminalScreen({super.key});
 
@@ -60,10 +59,10 @@ class _TerminalScreenState extends State<TerminalScreen>
             Glass.pageMargin,
             Glass.space12,
             Glass.pageMargin,
-            glassDockScrollPadding(context),
+            glassPageBottomPadding(context),
           ),
           children: [
-            Text(copy.title, style: Theme.of(context).textTheme.titleLarge),
+            _TitleRow(title: copy.title, back: copy.back),
             const SizedBox(height: Glass.cardGap),
             _CalloutCard(
               text: copy.rishDescription,
@@ -240,6 +239,29 @@ class _CodeBlock extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _TitleRow extends StatelessWidget {
+  const _TitleRow({required this.title, required this.back});
+
+  final String title;
+  final String back;
+
+  @override
+  Widget build(BuildContext context) {
+    final heading = Text(title, style: Theme.of(context).textTheme.titleLarge);
+    if (!Navigator.canPop(context)) return heading;
+    return Row(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.arrow_back_outlined),
+          tooltip: back,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        Expanded(child: heading),
+      ],
     );
   }
 }

@@ -6,13 +6,14 @@ import 'package:manager_flutter/settings/settings_models.dart';
 import 'package:manager_flutter/widgets/glass_alert.dart';
 import 'package:manager_flutter/widgets/glass_choice_dialog.dart';
 
-/// 原 Compose `SettingsActivity` 的整页换皮：启动 / 语言 / 界面三组（底栏 Tab，无返回箭头）。
+/// 原 Compose `SettingsActivity` 的整页换皮：启动 / 界面两组（底栏 Tab，无返回箭头）。
+/// 语言改在首页 Lang 芯片，本页不再放语言组。
 ///
 /// 业务逻辑全部在 Kotlin（`shizuku/settings`）：这里只画快照、转发点击。
-/// 每组一张页面级 [GlassPanel]（共 3 张），组内每行是普通 Row（RULEBOOK §3.1 / §3.2 v1.1）。
-/// 语言 / 深色模式单选走 [GlassChoiceDialog]；缺权限 / 缺通知监听确认框用共享 [GlassAlert]。
-/// 写操作直接用 Kotlin 带回的整页快照 `setState`；语言 / 夜间模式 / 主题类开关改后的宿主 `recreate()`
-/// 由 Kotlin 在回复之后自行调度（GAP-7），Dart 不处理。
+/// 每组一张页面级 [GlassPanel]（共 2 张），组内每行是普通 Row。
+/// 深色模式单选走 [GlassChoiceDialog]；缺权限 / 缺通知监听确认框用共享 [GlassAlert]。
+/// 写操作直接用 Kotlin 带回的整页快照 `setState`；夜间模式 / 主题类开关改后的宿主 `recreate()`
+/// 由 Kotlin 在回复之后自行调度，Dart 不处理。
 /// 不订阅 EventChannel：`AppShell` 每次切到本 Tab 都用新 `ValueKey` 重建本页，加上 `initState`
 /// 拉一次、`resumed` 重拉、写操作带回快照，共同保证新鲜度。
 class SettingsScreen extends StatefulWidget {
@@ -104,27 +105,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
-  Future<void> _pickLocale() async {
-    final snap = _snap;
-    final tag = await showDialog<String>(
-      context: context,
-      builder: (ctx) => GlassChoiceDialog(
-        title: snap.copy.language,
-        closeTooltip: snap.copy.cancel,
-        children: [
-          for (final locale in snap.locales)
-            _ChoiceRow(
-              label: locale.label,
-              selected: locale.selected,
-              onTap: () => Navigator.pop(ctx, locale.tag),
-            ),
-        ],
-      ),
-    );
-    if (tag == null || !mounted) return;
-    await _write(SettingsChannel.setLocale(tag));
-  }
-
   Future<void> _pickNightMode() async {
     final snap = _snap;
     final mode = await showDialog<int>(
@@ -213,30 +193,6 @@ class _SettingsScreenState extends State<SettingsScreen>
                   title: copy.tcpipPort,
                   summary: copy.tcpipPortSummary,
                   onTap: _editPort,
-                ),
-              ],
-            ),
-            const SizedBox(height: Glass.cardGap),
-            _SectionPanel(
-              title: copy.language,
-              rows: [
-                _SettingsRow(
-                  icon: Icons.language_outlined,
-                  title: copy.language,
-                  summary: snap.languageLabel(),
-                  onTap: _pickLocale,
-                ),
-                // 与 Compose 一致：翻译贡献者是静态行，点击无动作。
-                _SettingsRow(
-                  icon: Icons.info_outline,
-                  title: copy.translationContributors,
-                  summary: copy.translationContributorsSummary,
-                ),
-                _SettingsRow(
-                  icon: Icons.open_in_new_outlined,
-                  title: copy.translation,
-                  summary: copy.translationSummary,
-                  onTap: () => SettingsChannel.invoke('openTranslation'),
                 ),
               ],
             ),

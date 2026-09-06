@@ -154,7 +154,7 @@ Iterable<MethodCall> _callsOf(List<MethodCall> calls, String method) =>
 void main() {
   tearDown(() => _mock(null));
 
-  testWidgets('no host: three fallback sections, all entries, 6 switches, no crash',
+  testWidgets('no host: two fallback sections, startup+appearance entries, 6 switches, no crash',
       (tester) async {
     _mock((call) async => throw MissingPluginException());
     await _pumpSettings(tester);
@@ -162,8 +162,7 @@ void main() {
     const f = SettingsCopy.fallback;
     expect(find.text(f.title), findsOneWidget);
     expect(find.text(f.startup), findsOneWidget);
-    // 组标题与语言行标题同一条文案（与 Compose 一致）。
-    expect(find.text(f.language), findsNWidgets(2));
+    expect(find.text(f.language), findsNothing);
     expect(find.text(f.userInterface), findsOneWidget);
 
     for (final title in <String>[
@@ -172,20 +171,18 @@ void main() {
       f.autoPairing,
       f.watchdogAdb,
       f.tcpipPort,
-      f.translationContributors,
-      f.translation,
       f.darkTheme,
       f.blackNightTheme,
       f.useSystemColor,
     ]) {
       expect(_row(title), findsOneWidget, reason: title);
     }
+    expect(_row(f.translationContributors), findsNothing);
+    expect(_row(f.translation), findsNothing);
     expect(find.byType(Switch), findsNWidgets(6));
-    // 三组各一张页面级 GlassPanel；行不是 Card。
-    expect(find.byType(GlassPanel), findsNWidgets(3));
+    // 两组各一张页面级 GlassPanel；行不是 Card。
+    expect(find.byType(GlassPanel), findsNWidgets(2));
     expect(find.byType(Card), findsNothing);
-    // 无宿主的派生副标题走 fallback。
-    expect(find.text(f.languageSystem), findsOneWidget);
     expect(find.text('Follow system'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -209,10 +206,7 @@ void main() {
     expect(find.text('Startup!'), findsOneWidget);
     expect(find.text('Appearance!'), findsOneWidget);
     expect(find.text('root boot summary'), findsOneWidget);
-    expect(find.text('people'), findsOneWidget);
-    expect(find.text('help translate'), findsOneWidget);
-    // 派生副标题：当前语言 = selected 的 label；深色模式 = nightMode 对应 label。
-    expect(find.text('简体中文'), findsOneWidget);
+    // 派生副标题：深色模式 = nightMode 对应 label。
     expect(find.text('On!'), findsOneWidget);
 
     expect(
@@ -352,28 +346,6 @@ void main() {
     );
   });
 
-  testWidgets('language row opens GlassChoiceDialog; picking 2nd sends setLocale{tag}',
-      (tester) async {
-    final calls = _mockHost(state: _snapshot());
-    await _pumpSettings(tester);
-
-    await tester.tap(_row('Language!'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(GlassChoiceDialog), findsOneWidget);
-    expect(find.text('Follow System!'), findsOneWidget);
-    expect(find.text('English!'), findsOneWidget);
-    // 选中项（zh-CN）在弹层里有勾。
-    expect(find.byIcon(Icons.check_outlined), findsOneWidget);
-
-    await tester.tap(find.text('English!'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(GlassChoiceDialog), findsNothing);
-    final setLocale = _callsOf(calls, 'setLocale').single;
-    expect(setLocale.arguments, <String, dynamic>{'tag': 'en'});
-  });
-
   testWidgets('dark theme row opens GlassChoiceDialog; picking Off sends setNightMode{1}',
       (tester) async {
     final calls = _mockHost(state: _snapshot(nightMode: -1));
@@ -452,20 +424,6 @@ void main() {
     expect(_callsOf(calls, 'setTcpipPort'), isEmpty);
   });
 
-  testWidgets('translation row -> openTranslation; contributors row is inert',
-      (tester) async {
-    final calls = _mockHost(state: _snapshot());
-    await _pumpSettings(tester);
-
-    await tester.tap(_row('Contributors!'));
-    await tester.pumpAndSettle();
-    expect(calls.where((c) => c.method != 'getState'), isEmpty);
-
-    await tester.tap(_row('Translate!'));
-    await tester.pumpAndSettle();
-    expect(_callsOf(calls, 'openTranslation'), hasLength(1));
-  });
-
   testWidgets('supportsStartOnBoot=false hides the four startup switches (Compose parity)',
       (tester) async {
     _mockHost(state: _snapshot(supportsStartOnBoot: false));
@@ -477,7 +435,7 @@ void main() {
     expect(_row('Watchdog!'), findsNothing);
     expect(_row('TCP port!'), findsOneWidget);
     expect(find.byType(Switch), findsNWidgets(2));
-    expect(find.byType(GlassPanel), findsNWidgets(3));
+    expect(find.byType(GlassPanel), findsNWidgets(2));
   });
 
   testWidgets('write failure (PlatformException) falls back to re-pulling getState',
@@ -512,8 +470,6 @@ void main() {
     // 候选损坏 → 默认三选；nightMode=2 仍能映射到 "On"。
     expect(_row('Dark theme!'), findsOneWidget);
     expect(find.text('On'), findsOneWidget);
-    // locales 损坏 → 默认只剩 SYSTEM，语言行副标题退到默认候选的 label。
-    expect(find.text('Follow System'), findsOneWidget);
 
     await tester.tap(_row('Dark theme!'));
     await tester.pumpAndSettle();

@@ -3,17 +3,20 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:manager_flutter/apps/apps_screen.dart';
 import 'package:manager_flutter/home/home_screen.dart';
 import 'package:manager_flutter/nav/app_shell.dart';
 import 'package:manager_flutter/nav/glass_dock.dart';
 import 'package:manager_flutter/onetools/one_status_hero.dart';
+import 'package:manager_flutter/settings/settings_screen.dart';
 import 'package:manager_flutter/theme/app_theme.dart';
 
 const MethodChannel _homeChannel = MethodChannel('shizuku/home');
+const MethodChannel _appsChannel = MethodChannel('shizuku/apps');
+const MethodChannel _settingsChannel = MethodChannel('shizuku/settings');
+const MethodChannel _terminalChannel = MethodChannel('shizuku/terminal');
 
 /// 打桩 `shizuku/home`：记录每次调用的方法名。
-/// [state] 为 `null` 表示无宿主（每个方法都抛 [MissingPluginException]）；
-/// 否则 `getState` 返回它的 JSON，其余方法返回 `{"ok":true}`。
 List<String> mockHome({Map<String, Object?>? state}) {
   final calls = <String>[];
   final messenger =
@@ -28,7 +31,28 @@ List<String> mockHome({Map<String, Object?>? state}) {
   return calls;
 }
 
+void mockEmptyPageChannels() {
+  final messenger =
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+  Future<String> empty(MethodCall call) async {
+    if (call.method == 'getState') {
+      return jsonEncode(const <String, Object?>{'ok': true});
+    }
+    return jsonEncode(const <String, Object?>{'ok': true});
+  }
+
+  messenger.setMockMethodCallHandler(_appsChannel, empty);
+  messenger.setMockMethodCallHandler(_settingsChannel, empty);
+  messenger.setMockMethodCallHandler(_terminalChannel, empty);
+  addTearDown(() {
+    messenger.setMockMethodCallHandler(_appsChannel, null);
+    messenger.setMockMethodCallHandler(_settingsChannel, null);
+    messenger.setMockMethodCallHandler(_terminalChannel, null);
+  });
+}
+
 Future<void> pumpShell(WidgetTester tester) async {
+  mockEmptyPageChannels();
   await tester.pumpWidget(
     MaterialApp(theme: AppTheme.light(), home: const AppShell()),
   );
@@ -47,29 +71,29 @@ int stackIndex(WidgetTester tester) =>
 
 void main() {
   testWidgets(
-    'no host: shell renders dock with fallback labels and home hero',
+    'no host: shell renders two-item dock and home hero',
     (tester) async {
       mockHome(state: null);
       await pumpShell(tester);
 
       expect(find.byType(AppShell), findsOneWidget);
       expect(find.byType(GlassDock), findsOneWidget);
-      expect(find.byType(NavigationDestination), findsNWidgets(4));
+      expect(find.byType(NavigationDestination), findsNWidgets(2));
       expect(dockLabel('Shizuku'), findsOneWidget);
-      expect(dockLabel('Apps'), findsOneWidget);
-      expect(dockLabel('Terminal'), findsOneWidget);
       expect(dockLabel('Settings'), findsOneWidget);
+      expect(dockLabel('Apps'), findsNothing);
+      expect(dockLabel('Terminal'), findsNothing);
       expect(dockIcon(Icons.home_outlined), findsOneWidget);
-      expect(dockIcon(Icons.apps_outlined), findsOneWidget);
-      expect(dockIcon(Icons.terminal_outlined), findsOneWidget);
       expect(dockIcon(Icons.settings_outlined), findsOneWidget);
+      expect(dockIcon(Icons.apps_outlined), findsNothing);
+      expect(dockIcon(Icons.terminal_outlined), findsNothing);
       expect(stackIndex(tester), 0);
       expect(find.byType(HomeScreen), findsOneWidget);
       expect(find.byType(OneStatusHero), findsOneWidget);
     },
   );
 
-  testWidgets('tapping a destination switches tab; home stays alive', (
+  testWidgets('tapping settings switches tab; home stays alive', (
     tester,
   ) async {
     mockHome(state: null);
@@ -78,14 +102,11 @@ void main() {
     final homeWidget = tester.widget<HomeScreen>(find.byType(HomeScreen));
     final homeState = tester.state(find.byType(HomeScreen));
 
-    await tester.tap(dockIcon(Icons.apps_outlined));
+    await tester.tap(dockIcon(Icons.settings_outlined));
     await tester.pumpAndSettle();
 
     expect(stackIndex(tester), 1);
-    expect(find.byIcon(Icons.hourglass_empty_outlined), findsOneWidget);
-    // 底栏标签 + 占位卡标签各一份。
-    expect(find.text('Apps'), findsNWidgets(2));
-    // 非选中页不在台上，但仍挂在树里（IndexedStack 保活）。
+    expect(find.byType(SettingsScreen), findsOneWidget);
     expect(find.byType(HomeScreen), findsNothing);
     expect(find.byType(HomeScreen, skipOffstage: false), findsOneWidget);
 
@@ -101,7 +122,7 @@ void main() {
     expect(identical(tester.state(find.byType(HomeScreen)), homeState), isTrue);
   });
 
-  testWidgets('home apps tile switches to the Apps tab instead of openApps', (
+  testWidgets('home apps tile pushes AppsScreen instead of switching tabs', (
     tester,
   ) async {
     final calls = mockHome(
@@ -123,16 +144,23 @@ void main() {
     await tester.tap(find.text('Application management'));
     await tester.pumpAndSettle();
 
-    // 确认弹窗：canOpen 时确认键文案是 copy.appsOpen。
     await tester.tap(find.text('Tap to manage authorized apps'));
     await tester.pumpAndSettle();
 
-    expect(stackIndex(tester), 1);
-    expect(find.byIcon(Icons.hourglass_empty_outlined), findsOneWidget);
+    expect(find.byType(AppsScreen), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_back_outlined), findsOneWidget);
+    expect(
+      tester
+          .widget<IndexedStack>(
+            find.byType(IndexedStack, skipOffstage: false),
+          )
+          .index,
+      0,
+    );
     expect(calls, isNot(contains('openApps')));
   });
 
-  testWidgets('bad input: non-string tabApps falls back to "Apps"', (
+  testWidgets('bad input: non-string tabHome falls back to "Shizuku"', (
     tester,
   ) async {
     mockHome(
@@ -144,8 +172,9 @@ void main() {
     );
     await pumpShell(tester);
 
-    expect(dockLabel('Apps'), findsOneWidget);
+    expect(dockLabel('Apps'), findsNothing);
     expect(dockLabel('123'), findsNothing);
     expect(dockLabel('Shizuku'), findsOneWidget);
+    expect(dockLabel('Settings'), findsOneWidget);
   });
 }

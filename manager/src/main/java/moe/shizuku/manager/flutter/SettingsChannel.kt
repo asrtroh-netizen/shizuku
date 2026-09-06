@@ -165,11 +165,11 @@ class SettingsChannel(private val activity: Activity, private val scope: Corouti
     }
 
     /**
-     * GAP-7 契约：重建前把当前 Tab（设置 = 3）写进宿主 intent，宿主 `getInitialRoute()` 读它回到设置 Tab。
+     * 重建前把设置 Tab（= 1）写进宿主 intent，宿主 `getInitialRoute()` 读它回到设置。
      * 必须在 `result.success(...)` 之后调用；延迟 200ms 对齐 Compose `recreateAfterAnimation`。
      */
     private fun scheduleRecreate() {
-        activity.intent?.putExtra("moe.shizuku.manager.extra.TAB", 3)
+        activity.intent?.putExtra("moe.shizuku.manager.extra.TAB", 1)
         mainHandler.postDelayed({
             if (!activity.isDestroyed) activity.recreate()
         }, 200)

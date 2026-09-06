@@ -49,16 +49,18 @@ class FlutterHostActivity : FlutterActivity() {
     }
 
     /**
-     * 设置页改语言/主题后宿主 recreate，通道会先把目标 Tab 写进 intent（RULEBOOK §10 GAP-7）；
+     * 设置页改语言/主题后宿主 recreate，通道会先把目标 Tab 写进 intent；
      * 这里转成 Dart 初始路由 `/tab/<n>`，读完即删，免得后续配置变更重建也回到设置页。
-     * 系统"应用设置"入口（`APPLICATION_PREFERENCES`，原由 Compose `SettingsActivity` 承接）直接落到设置 Tab。
+     * 底栏只有首页(0) / 设置(1)。系统"应用设置"入口直达设置。
+     * `/tab/3` 是两 Tab 之前的设置下标，仍映射到设置。
      */
     override fun getInitialRoute(): String? {
-        if (intent?.action == Intent.ACTION_APPLICATION_PREFERENCES) return "/tab/3"
+        if (intent?.action == Intent.ACTION_APPLICATION_PREFERENCES) return "/tab/1"
         val tab = intent?.getIntExtra(EXTRA_TAB, -1) ?: -1
-        if (tab !in 0..3) return super.getInitialRoute()
+        if (tab < 0) return super.getInitialRoute()
         intent.removeExtra(EXTRA_TAB)
-        return "/tab/$tab"
+        val mapped = if (tab == 1 || tab == 3) 1 else 0
+        return "/tab/$mapped"
     }
 
     override fun onResume() {

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:manager_flutter/home/home_cards.dart';
+import 'package:manager_flutter/home/home_header.dart';
 import 'package:manager_flutter/home/home_models.dart';
 import 'package:manager_flutter/home/home_screen.dart';
 import 'package:manager_flutter/onetools/glass.dart';
@@ -185,6 +186,14 @@ void main() {
 
     expect(opened, 1);
     expect(methods(calls), isNot(contains('openTerminal')));
+  });
+
+  testWidgets('theme slide sends toggleTheme', (tester) async {
+    final calls = mockHome(state: runningState());
+    await pumpHome(tester);
+    await tester.tap(find.byType(HomeThemeSlide));
+    await tester.pump();
+    expect(methods(calls), contains('toggleTheme'));
   });
 
   testWidgets('pairing button fires onOpenPairing directly, no openPairing',

@@ -526,6 +526,14 @@ double glassDockScrollPadding(BuildContext context) {
       Glass.space16;
 }
 
+/// 列表底部留白：推入页（可 pop）只垫手势条；底栏 Tab 仍避让悬浮 Dock。
+double glassPageBottomPadding(BuildContext context) {
+  if (Navigator.canPop(context)) {
+    return Glass.space24 + MediaQuery.viewPaddingOf(context).bottom;
+  }
+  return glassDockScrollPadding(context);
+}
+
 /// [RefreshIndicator] 在 [GlassScaffold] 里该用的 `edgeOffset`。
 ///
 /// 视口从屏幕顶端起算，下拉转圈默认落在状态栏底下看不全；往下推一个状态栏高

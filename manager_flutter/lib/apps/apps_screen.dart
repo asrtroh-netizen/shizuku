@@ -7,12 +7,12 @@ import 'package:manager_flutter/onetools/glass.dart';
 import 'package:manager_flutter/widgets/glass_alert.dart';
 import 'package:manager_flutter/widgets/glass_notice_card.dart';
 
-/// 原 Compose `AppsManagementActivity` 的整页换皮：授权应用列表（底栏 Tab，无返回箭头）。
+/// 原 Compose `AppsManagementActivity` 的整页换皮：授权应用列表（从首页推入）。
 ///
 /// 业务逻辑全部在 Kotlin（`shizuku/apps`）：这里只画快照、转发点击。
 /// 服务未运行时渲染占位卡、不渲染列表（GAP-3）；图标按需经 `getIcon` 拉 PNG 并按键缓存（GAP-4）。
-/// 不订阅任何 EventChannel（RULEBOOK §9 刷新时机）：`AppShell` 每次切到本 Tab 都用新 `ValueKey`
-/// 重建本页，加上 `initState` 拉一次、`resumed` 重拉、`toggle` 直接带回快照，共同保证新鲜度。
+/// 不订阅任何 EventChannel：每次推入都是新 State，加上 `initState` 拉一次、
+/// `resumed` 重拉、`toggle` 直接带回快照，共同保证新鲜度。
 class AppsScreen extends StatefulWidget {
   const AppsScreen({super.key});
 
@@ -109,12 +109,14 @@ class _AppsScreenState extends State<AppsScreen> with WidgetsBindingObserver {
             Glass.pageMargin,
             Glass.space12,
             Glass.pageMargin,
-            glassDockScrollPadding(context),
+            glassPageBottomPadding(context),
           ),
           itemCount: itemCount,
           separatorBuilder: (_, _) => const SizedBox(height: Glass.cardGap),
           itemBuilder: (context, index) {
-            if (index == 0) return _Header(title: copy.title);
+            if (index == 0) {
+              return _Header(title: copy.title, back: copy.back);
+            }
             if (notice != null) {
               return GlassNoticeCard(icon: Icons.info_outline, text: notice);
             }
@@ -135,13 +137,25 @@ class _AppsScreenState extends State<AppsScreen> with WidgetsBindingObserver {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.title});
+  const _Header({required this.title, required this.back});
 
   final String title;
+  final String back;
 
   @override
   Widget build(BuildContext context) {
-    return Text(title, style: Theme.of(context).textTheme.titleLarge);
+    final heading = Text(title, style: Theme.of(context).textTheme.titleLarge);
+    if (!Navigator.canPop(context)) return heading;
+    return Row(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.arrow_back_outlined),
+          tooltip: back,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        Expanded(child: heading),
+      ],
+    );
   }
 }
 

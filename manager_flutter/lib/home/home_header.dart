@@ -91,8 +91,8 @@ class HomeThemeSlide extends StatelessWidget {
     const trackH = 30.0;
     const knob = 24.0;
     const pad = 3.0;
-    const iconTint = Color(0xFF3A4A6B);
     final cs = Theme.of(context).colorScheme;
+    final iconTint = cs.onSurface;
     final offset = dark ? trackW - knob - pad : pad;
     return Semantics(
       button: true,
